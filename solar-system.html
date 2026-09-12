@@ -299,6 +299,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
   background:rgba(255,170,60,.10);border-left:2px solid var(--gold)}
 .ai-warn[hidden]{display:none}
 .ai-warn b{color:#ffe6b8}
+.ai-store-state{margin:-4px 0 12px;padding:8px 10px;font-size:10.5px;line-height:1.55;
+  border-left:2px solid var(--cyan);background:rgba(125,249,255,.07);color:#bfe9ff}
+.ai-store-state[hidden]{display:none}
+.ai-store-state b{color:#eefaff;font-family:'Orbitron',sans-serif;font-size:9.5px;letter-spacing:.14em}
+.ai-store-state.warn{border-left-color:var(--gold);background:rgba(255,170,60,.10);color:#ffd8a0}
+.ai-store-state.warn b{color:#ffe6b8}
 .ai-warn code{font-family:'Consolas',ui-monospace,monospace;font-size:10px;color:#ffe2a8;
   background:rgba(125,249,255,.10);border:1px solid rgba(125,249,255,.18);padding:0 3px}
 .ai-card{max-height:92vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(125,249,255,.3) transparent}
@@ -436,6 +442,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
     </div>
     <div class="ai-field"><label>BASE URL</label><input id="ai-url" type="text" placeholder="https://api.openai.com/v1" spellcheck="false"/></div>
     <div class="ai-field"><label>MODEL</label><input id="ai-model" type="text" placeholder="gpt-4o-mini" spellcheck="false"/></div>
+    <p id="ai-store-state" class="ai-store-state" hidden></p>
     <label class="ai-check"><input id="ai-remember" type="checkbox" checked/><span>LƯU KEY TRONG TRÌNH DUYỆT</span></label>
     <div class="ai-actions">
       <button id="ai-test">KIỂM TRA KẾT NỐI</button>
@@ -1331,7 +1338,7 @@ const AI={
 };
 let chatOpen=false, chatDocked=false, storageAvailable=true;
 let $fab,$panel,$msgs,$chips,$input,$send,$ctxTitle,$ctxSub,$ctxDot,$dockSlot,$modal,
-    $keyIn,$urlIn,$modelIn,$testRes,$provSel,$keyEye,$keyLink,$remember,$storeWarn;
+    $keyIn,$urlIn,$modelIn,$testRes,$provSel,$keyEye,$keyLink,$remember,$storeWarn,$storeState;
 
 /* iframe sandbox (allow-scripts, không allow-same-origin) làm mọi API lưu trữ ném SecurityError */
 function checkStorage(){
@@ -1344,8 +1351,12 @@ function hasAIKey(){ return !!(AI.settings.key&&AI.settings.key.trim()); }
 function providerLabel(){ const p=AI_PROVIDERS[AI.settings.provider]; return p?p.label:'API'; }
 
 function loadAISettings(){
+  /* localStorage là nơi chính; sessionStorage chỉ là bản sao dự phòng
+     (một số trình duyệt/tiện ích dọn localStorage sẽ xoá bản chính). */
+  let raw=null;
+  try{ raw=localStorage.getItem('k77_ai_settings_v2'); }catch(e){}
+  if(!raw){ try{ raw=sessionStorage.getItem('k77_ai_settings_v2'); }catch(e){} }
   try{
-    const raw=localStorage.getItem('k77_ai_settings_v2');
     if(raw){
       const s=JSON.parse(raw)||{};
       if(s.provider&&AI_PROVIDERS[s.provider]) AI.settings.provider=s.provider;
@@ -1353,17 +1364,20 @@ function loadAISettings(){
       if(s.url) AI.settings.url=s.url;
       if(s.model) AI.settings.model=s.model;
       AI.settings.remember=s.remember!==false;
+      AI.settings.loadedFromStore=true;
     }
     localStorage.removeItem('k77_ai_settings_v1');   /* dọn cấu hình localhost đời cũ */
   }catch(e){}
   if(isLocalUrl(AI.settings.url)) AI.settings.provider='custom';
 }
 function saveAISettings(){
+  const s=AI.settings;
+  const data={ provider:s.provider, url:s.url, model:s.model, remember:s.remember!==false };
+  if(data.remember) data.key=s.key;              /* tắt LƯU KEY thì key không vào nơi lưu */
+  const json=JSON.stringify(data);
   try{
-    const s=AI.settings;
-    const data={ provider:s.provider, url:s.url, model:s.model, remember:s.remember!==false };
-    if(data.remember) data.key=s.key;              /* tắt LƯU KEY thì key không vào localStorage */
-    localStorage.setItem('k77_ai_settings_v2',JSON.stringify(data));
+    localStorage.setItem('k77_ai_settings_v2',json);
+    if(data.remember) sessionStorage.setItem('k77_ai_settings_v2',json);
   }catch(e){}
 }
 
@@ -1852,9 +1866,31 @@ function openAIModal(warnMsg){
   applyProviderHints();
   $storeWarn.hidden=storageAvailable;         /* cảnh báo khi trình xem trước chặn localStorage */
   $remember.disabled=!storageAvailable;
+  updateStoreState();
   $testRes.textContent=warnMsg||''; $testRes.className=warnMsg?'bad':'';
   $modal.classList.add('open');
   if(!hasAIKey()) setTimeout(()=>{ try{ $keyIn.focus(); }catch(e){} },80);
+}
+/* Nói rõ key đang được nạp từ đâu, để không tưởng nhầm là mất sau khi tải lại */
+function updateStoreState(){
+  if(!$storeState) return;
+  if(!storageAvailable){
+    $storeState.hidden=false; $storeState.className='ai-store-state warn';
+    $storeState.innerHTML='<b>KHÔNG LƯU ĐƯỢC</b> — trình duyệt đang chặn lưu trữ, key chỉ dùng trong phiên này.';
+    return;
+  }
+  if(hasAIKey()&&AI.settings.loadedFromStore){
+    $storeState.hidden=false; $storeState.className='ai-store-state';
+    $storeState.innerHTML='<b>✓ ĐÃ NẠP LẠI KEY ĐÃ LƯU</b> — key nằm trong trình duyệt này nên còn nguyên sau khi tải lại trang.';
+    return;
+  }
+  if(hasAIKey()){
+    $storeState.hidden=false; $storeState.className='ai-store-state';
+    $storeState.innerHTML='<b>KEY TRONG PHIÊN NÀY</b> — bấm LƯU (kèm ô "LƯU KEY TRONG TRÌNH DUYỆT") để dùng cho lần sau.';
+    return;
+  }
+  $storeState.hidden=false; $storeState.className='ai-store-state warn';
+  $storeState.innerHTML='<b>CHƯA CÓ KEY</b> — dán key của nhà cung cấp rồi bấm LƯU.';
 }
 function closeAIModal(){ $modal.classList.remove('open'); }
 function httpHint(st){
@@ -1907,6 +1943,7 @@ function saveAIModal(){
   if(!s.url){ $testRes.textContent='✗ Thiếu BASE URL.'; $testRes.className='bad'; return; }
   if(!s.model){ $testRes.textContent='✗ Thiếu MODEL.'; $testRes.className='bad'; return; }
   saveAISettings();
+  s.loadedFromStore=storageAvailable&&s.remember&&!!s.key;
   closeAIModal();
   const storeMsg=storageAvailable
     ? (s.remember&&s.key?' · KEY ĐÃ LƯU':' · KEY CHỈ DÙNG TRONG PHIÊN')
@@ -1939,6 +1976,7 @@ function initChat(){
   $keyLink=document.getElementById('ai-key-link');
   $remember=document.getElementById('ai-remember');
   $storeWarn=document.getElementById('ai-store-warn');
+  $storeState=document.getElementById('ai-store-state');
   $storeWarn.hidden=storageAvailable;
   fillProviderOptions();
   $provSel.addEventListener('change',()=>{
@@ -2050,7 +2088,18 @@ function animate(){
 /* ================= INIT ================= */
 function showFatal(msg){
   const l=$('#loading');
-  l.innerHTML=`<div class="load-frame"><h2>ĐIỂM TIN</h2><p style="color:#ff8d7a;font-size:14px;margin-top:16px">${msg}</p></div>`;
+  l.innerHTML='<div class="load-frame">'
+    +'<h2>KHÔNG DỰNG ĐƯỢC CẢNH 3D</h2>'
+    +'<p style="color:#ff8d7a;font-size:14px;margin:16px 0 8px">'+msg+'</p>'
+    +'<p style="color:#7d93b8;font-size:12.5px;line-height:1.6;margin-bottom:18px">'
+      +'Phần mô phỏng 3D cần thư viện three.js tải từ internet. Hãy kiểm tra kết nối mạng, '
+      +'hoặc tải dự án về máy rồi chạy qua địa chỉ http://localhost (đừng mở bằng file://). '
+      +'API key đã lưu trong trình duyệt vẫn còn nguyên.'
+    +'</p>'
+    +'<button id="fatal-close" class="ctl-btn wide" style="padding:10px 18px">ĐÓNG</button>'
+    +'</div>';
+  const btn=document.getElementById('fatal-close');
+  if(btn) btn.addEventListener('click',()=>{ l.classList.add('done'); setTimeout(()=>l.remove(),700); });
 }
 
 async function init(){
@@ -2104,7 +2153,6 @@ async function init(){
   buildNav();
   bindUI();
   bindPointer();
-  initChat();
   updateSpeedHUD();
 
   addEventListener('resize',()=>{
@@ -2120,6 +2168,10 @@ async function init(){
   animate();
 }
 
+/* Khởi tạo TRẠM AI + thiết lập NGAY, KHÔNG phụ thuộc việc dựng cảnh 3D.
+   Nhờ vậy key đã lưu được nạp lại tức thì sau mỗi lần tải trang, và vẫn
+   còn nguyên nếu cảnh 3D dựng lỗi (thiếu mạng / không có WebGL). */
+initChat();
 init();
 </script>
 </body>
