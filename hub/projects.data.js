@@ -4,7 +4,7 @@
    Xem docs/THEM-DU-AN-MOI.md để biết chi tiết từng trường.
 
    Xuất UMD: chạy được ở browser (window.HUB_PROJECTS)
-             và ở Node (module.exports) cho _hub/test/hub-test.js
+             và ở Node (module.exports). Chạy test: node hub/test/hub-test.js
    ========================================================= */
 (function (root, factory) {
   'use strict';
@@ -28,7 +28,7 @@
     { id: 'mô phỏng', name: 'MÔ PHỎNG', en: 'SIMULATION' }
   ];
 
-  /* Loại hình vẽ thủ tục có sẵn (xem _hub/cards.js → HUB_ART). */
+  /* Loại hình vẽ thủ tục có sẵn (xem hub/cards.js → HUB_ART). */
   var HUB_ICONS = ['orbit', 'bird', 'mole', 'fraction', 'generic'];
 
   var HUB_PROJECTS = [

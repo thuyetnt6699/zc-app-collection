@@ -4,7 +4,7 @@ Trang chủ `index.html` **không chứa tên dự án nào**. Toàn bộ thẻ,
 ô tìm kiếm, dải chỉ số và bảng chi tiết đều được dựng tự động từ **một file dữ liệu duy nhất**:
 
 ```
-_hub/projects.data.js
+hub/projects.data.js
 ```
 
 Thêm dự án mới = thêm một object vào mảng `HUB_PROJECTS`, rồi chạy kiểm tra. Không phải sửa HTML, CSS hay JavaScript.
@@ -23,7 +23,7 @@ Tạo file/thư mục dự án trong `D:\WORKS\Test\` (cùng cấp với `index.
 D:\WORKS\Test\game-moi\index.html
 ```
 
-### 2. Thêm một object vào `_hub/projects.data.js`
+### 2. Thêm một object vào `hub/projects.data.js`
 
 ```js
 {
@@ -50,7 +50,7 @@ Nhớ **dấu phẩy** giữa các object.
 ### 3. Chạy kiểm tra
 
 ```bash
-node _hub/test/hub-test.js
+node hub/test/hub-test.js
 ```
 
 Lệnh này tự bắt các lỗi hay gặp: thiếu trường bắt buộc, `id` trùng hoặc ghi sai kiểu,
@@ -60,7 +60,7 @@ Lệnh này tự bắt các lỗi hay gặp: thiếu trường bắt buộc, `id
 Chạy thêm bài kiểm tra giao diện (không cần trình duyệt):
 
 ```bash
-node _hub/test/hub-smoke.js
+node hub/test/hub-smoke.js
 ```
 
 Xong. Mở lại trang (Ctrl + F5 để tránh bản cache) là thấy dự án mới.
@@ -110,11 +110,11 @@ Nút lọc trên hub được sinh tự động và **chỉ hiện khi lĩnh v�
 
 Hình trên thẻ là tranh vẽ bằng canvas, không phải ảnh. Muốn thêm kiểu mới:
 
-1. Mở `_hub/cards.js`.
+1. Mở `hub/cards.js`.
 2. Thêm hàm vẽ vào đối tượng `ART`, nhận `(c, w, h, accent, t, seed)` — `c` là context 2D,
    `w/h` là kích thước, `accent` là màu của dự án, `t` là số giây để vẽ chuyển động.
-3. Thêm tên khoá đó vào `HUB_ICONS` trong `_hub/projects.data.js`.
-4. `node _hub/test/hub-test.js` để xác nhận `icon` mới hợp lệ.
+3. Thêm tên khoá đó vào `HUB_ICONS` trong `hub/projects.data.js`.
+4. `node hub/test/hub-test.js` để xác nhận `icon` mới hợp lệ.
 
 ---
 

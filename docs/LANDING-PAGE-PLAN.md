@@ -11,8 +11,8 @@ Tạo **một hub page** ở gốc project, giới thiệu toàn bộ dự án h
 Tiêu chí nghiệm thu:
 
 - Mở `http://localhost:8000/` (hoặc `:3000`) thấy hub: nền vũ trụ 3D chuyển động, 4 thẻ dự án, click → mở overlay chi tiết → nút mở dự án chạy đúng.
-- Thêm 1 dự án thứ 5 = copy 1 object trong `_hub/projects.data.js`, sửa nội dung. Grid/filter/tìm kiếm/overlay tự cập nhật, **không sửa HTML/CSS**.
-- `node _hub/test/hub-test.js` → PASS toàn bộ (schema + link tồn tại thật trên đĩa).
+- Thêm 1 dự án thứ 5 = copy 1 object trong `hub/projects.data.js`, sửa nội dung. Grid/filter/tìm kiếm/overlay tự cập nhật, **không sửa HTML/CSS**.
+- `node hub/test/hub-test.js` → PASS toàn bộ (schema + link tồn tại thật trên đĩa).
 - Hub hoạt động **offline và qua `file://`** (không phụ thuộc CDN/thư viện ngoài).
 - Không sửa nội dung/logic của 4 dự án hiện có (chỉ thêm 1 link "quay lại trạm").
 
@@ -21,7 +21,7 @@ Tiêu chí nghiệm thu:
 | Vấn đề | Chốt | Lý do |
 |---|---|---|
 | Vị trí hub | `index.html` ở **gốc** `D:\WORKS\Test\` | `serve .` mặc định trả về hub; đường dẫn tới 4 dự án là tương đối cùng cấp |
-| Tài sản hub | `_hub/` (data, css, js, test) | Tiền tố `_` đứng đầu bảng chữ cái, không đụng tên dự án tương lai |
+| Tài sản hub | `hub/` (data, css, js, test) | Tiền tố `_` đứng đầu bảng chữ cái, không đụng tên dự án tương lai |
 | 3D engine | **Không dùng three.js** — Canvas 2D tự chiếu phối cảnh + CSS 3D `perspective`/`translateZ` | jsdelivr/npm không truy cập được từ môi trường này; hub tự chứa, chạy cả offline |
 | Ảnh thumbnail | **Không dùng file ảnh** — mỗi thẻ có 1 canvas nhỏ vẽ cảnh thủ tục riêng (quỹ đạo/ống nước/ô chuột/phân số) | Không cần chụp screenshot, không thêm file nặng, hoạt ảnh sống động |
 | Video demo | Không autoload trên thẻ (file .mp4 nặng tới 138MB) | Thẻ chỉ hiện huy hiệu "▶ DEMO"; overlay có nút mở video |
@@ -40,7 +40,7 @@ D:\WORKS\Test\
 ├── hoc-phan-so-lop5/
 │   ├── index.html                  ← + link quay lại
 │   └── css/style.css               ← + ~10 dòng style cho link đó
-├── _hub/
+├── hub/
 │   ├── projects.data.js            ← NGUỒN SỰ THẬT DUY NHẤT (UMD: browser + Node)
 │   ├── hub.css                     ← toàn bộ giao diện sci-fi
 │   ├── starfield.js                ← trường sao 3D + tinh vân + sao băng (canvas)
@@ -56,7 +56,7 @@ D:\WORKS\Test\
 
 ## 4. Data model — trái tim của khả năng mở rộng
 
-`_hub/projects.data.js` giữ mảng `HUB_PROJECTS` + `HUB_CATEGORIES`, xuất UMD (`window.HUB_*` cho browser, `module.exports` cho Node test). Mọi thứ khác đọc từ đây; **không hardcode tên dự án ở file nào khác**.
+`hub/projects.data.js` giữ mảng `HUB_PROJECTS` + `HUB_CATEGORIES`, xuất UMD (`window.HUB_*` cho browser, `module.exports` cho Node test). Mọi thứ khác đọc từ đây; **không hardcode tên dự án ở file nào khác**.
 
 ```js
 {
@@ -112,7 +112,7 @@ Thêm đúng **1 thẻ `<a>` "⌂ VỀ TRẠM ĐIỀU KHIỂN"** dạng inline s
 
 ## 7. Test & kiểm chứng
 
-`_hub/test/hub-test.js` (Node thuần):
+`hub/test/hub-test.js` (Node thuần):
 
 1. Mảng không rỗng; mỗi entry đủ trường bắt buộc, đúng kiểu.
 2. `id` duy nhất + kebab-case.
@@ -127,8 +127,8 @@ Kiểm chứng thủ công: `python -m http.server 8000` → mở `http://localh
 
 | Hạng mục | Kết quả |
 |---|---|
-| `node _hub/test/hub-test.js` | PASS 3/3 nhóm (dữ liệu, link tồn tại thật, danh mục) |
-| `node _hub/test/hub-smoke.js` | PASS 39/39 kiểm tra (dựng thẻ, nút "MỞ NGAY", lọc, tìm kiếm, bảng chi tiết, bàn phím, màn khởi động, nền sao, lớp 3D) |
+| `node hub/test/hub-test.js` | PASS 3/3 nhóm (dữ liệu, link tồn tại thật, danh mục) |
+| `node hub/test/hub-smoke.js` | PASS 39/39 kiểm tra (dựng thẻ, nút "MỞ NGAY", lọc, tìm kiếm, bảng chi tiết, bàn phím, màn khởi động, nền sao, lớp 3D) |
 | `node --check` 7 file JS | Tất cả hợp lệ |
 | 2 test cũ của `hoc-phan-so-lop5` | Vẫn PASS (17.387 kiểm tra toán + DOM smoke) sau khi chèn nút "VỀ TRẠM" |
 | Ảnh chụp Chrome headless (1440px, 1600px, 430px) | Font Orbitron tải được; thẻ, hình vẽ thủ tục, radar, bộ lọc, bảng chi tiết và giao diện mobile đều hiển thị đúng |
@@ -154,11 +154,11 @@ Kiểm chứng thủ công: `python -m http.server 8000` → mở `http://localh
 
 ## 8. Thứ tự thực thi
 
-1. `docs/LANDING-PAGE-PLAN.md` + `_hub/projects.data.js` + `_hub/test/hub-test.js` → test PASS.
+1. `docs/LANDING-PAGE-PLAN.md` + `hub/projects.data.js` + `hub/test/hub-test.js` → test PASS.
 2. `index.html`.
-3. `_hub/hub.css`.
-4. `_hub/starfield.js` → `_hub/scene3d.js`.
-5. `_hub/cards.js` → `_hub/overlay.js` → `_hub/main.js`.
+3. `hub/hub.css`.
+4. `hub/starfield.js` → `hub/scene3d.js`.
+5. `hub/cards.js` → `hub/overlay.js` → `hub/main.js`.
 6. Chèn link quay lại vào 5 file dự án + chạy lại 2 test của `hoc-phan-so-lop5`.
 7. Chạy `hub-test.js`, `node --check` mọi file JS, khởi động server nền để xem.
 8. `docs/THEM-DU-AN-MOI.md`.

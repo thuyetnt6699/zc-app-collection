@@ -1,6 +1,6 @@
 /* =========================================================
    HUB TEST — kiểm tra dữ liệu trạm điều khiển (không cần trình duyệt).
-   Chạy: node _hub/test/hub-test.js
+   Chạy: node hub/test/hub-test.js
    Bắt được: thiếu trường, id trùng/sai định dạng, href gõ sai
    (file không tồn tại), danh mục lạ, màu sai, enum sai, demo thiếu.
    ========================================================= */

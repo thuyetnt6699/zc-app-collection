@@ -14,11 +14,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" />
 
-<link rel="stylesheet" href="_hub/hub.css" />
+<link rel="stylesheet" href="hub/hub.css" />
 </head>
 <body>
 
-<!-- ============ NỀN VŨ TRỤ (canvas do _hub/starfield.js vẽ) ============ -->
+<!-- ============ NỀN VŨ TRỤ (canvas do hub/starfield.js vẽ) ============ -->
 <div class="space" aria-hidden="true">
   <canvas id="space-canvas"></canvas>
   <div class="space-nebula" data-depth="0.15"></div>
@@ -144,7 +144,7 @@
       <article class="brief-card">
         <span class="brief-no">01</span>
         <h3>Khai báo dữ liệu</h3>
-        <p>Mở <code>_hub/projects.data.js</code> và thêm một object vào <code>HUB_PROJECTS</code> với <code>id</code>, <code>name</code>, <code>category</code>, <code>description</code>, <code>href</code>, <code>accent</code>, <code>icon</code>, <code>status</code>.</p>
+        <p>Mở <code>hub/projects.data.js</code> và thêm một object vào <code>HUB_PROJECTS</code> với <code>id</code>, <code>name</code>, <code>category</code>, <code>description</code>, <code>href</code>, <code>accent</code>, <code>icon</code>, <code>status</code>.</p>
       </article>
       <article class="brief-card">
         <span class="brief-no">02</span>
@@ -154,7 +154,7 @@
       <article class="brief-card">
         <span class="brief-no">03</span>
         <h3>Chạy kiểm tra</h3>
-        <p><code>node _hub/test/hub-test.js</code> sẽ xác nhận đủ trường, <code>id</code> không trùng và đường dẫn <code>href</code> trỏ tới file có thật trong kho. Hướng dẫn đầy đủ: <code>docs/THEM-DU-AN-MOI.md</code>.</p>
+        <p><code>node hub/test/hub-test.js</code> sẽ xác nhận đủ trường, <code>id</code> không trùng và đường dẫn <code>href</code> trỏ tới file có thật trong kho. Hướng dẫn đầy đủ: <code>docs/THEM-DU-AN-MOI.md</code>.</p>
       </article>
     </div>
   </section>
@@ -215,11 +215,11 @@
 </div>
 
 <!-- ============ DỮ LIỆU + LOGIC ============ -->
-<script src="_hub/projects.data.js"></script>
-<script src="_hub/starfield.js"></script>
-<script src="_hub/scene3d.js"></script>
-<script src="_hub/cards.js"></script>
-<script src="_hub/overlay.js"></script>
-<script src="_hub/main.js"></script>
+<script src="hub/projects.data.js"></script>
+<script src="hub/starfield.js"></script>
+<script src="hub/scene3d.js"></script>
+<script src="hub/cards.js"></script>
+<script src="hub/overlay.js"></script>
+<script src="hub/main.js"></script>
 </body>
 </html>

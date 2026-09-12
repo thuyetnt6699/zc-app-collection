@@ -46,7 +46,7 @@ Bấm nút **MỞ NGAY** trên thẻ để vào thẳng dự án, hoặc bấm v
 │   ├── index.html
 │   ├── css/, js/
 │   └── test/                   # generator-test.js, dom-smoke.js
-├── _hub/                       # Mã nguồn của trang chủ
+├── hub/                       # Mã nguồn của trang chủ
 │   ├── projects.data.js        # ⭐ NGUỒN DỮ LIỆU DUY NHẤT — thêm dự án mới ở đây
 │   ├── hub.css                 # Giao diện sci-fi: nền vũ trụ, HUD, grid 3D, ánh sáng
 │   ├── starfield.js            # Nền sao 3 chiều, tinh vân, sao băng, chế độ warp
@@ -65,8 +65,8 @@ Bấm nút **MỞ NGAY** trên thẻ để vào thẳng dự án, hoặc bấm v
 ## Thêm một dự án mới
 
 1. Đặt dự án vào kho (file hoặc thư mục con).
-2. Thêm một object vào `HUB_PROJECTS` trong [`_hub/projects.data.js`](_hub/projects.data.js).
-3. Chạy `node _hub/test/hub-test.js` để kiểm tra.
+2. Thêm một object vào `HUB_PROJECTS` trong [`hub/projects.data.js`](hub/projects.data.js).
+3. Chạy `node hub/test/hub-test.js` để kiểm tra.
 
 **Không cần sửa HTML, CSS hay JavaScript** — thẻ, huy hiệu, bộ lọc, ô tìm kiếm, dải chỉ số và bảng chi tiết đều sinh tự động từ dữ liệu.
 
@@ -79,8 +79,8 @@ Hướng dẫn đầy đủ từng trường: [docs/THEM-DU-AN-MOI.md](docs/THEM
 Không cần cài thư viện nào (Node.js thuần):
 
 ```bash
-node _hub/test/hub-test.js                    # dữ liệu: đủ trường, id duy nhất, href trỏ tới file có thật
-node _hub/test/hub-smoke.js                   # chạy trọn trang chủ trong DOM giả (40 kiểm tra)
+node hub/test/hub-test.js                    # dữ liệu: đủ trường, id duy nhất, href trỏ tới file có thật
+node hub/test/hub-smoke.js                   # chạy trọn trang chủ trong DOM giả (40 kiểm tra)
 
 cd hoc-phan-so-lop5
 node test/generator-test.js                   # kiểm tra toán học mọi câu hỏi
@@ -88,6 +88,20 @@ node test/dom-smoke.js                        # chạy trọn một phiên học
 ```
 
 Trang chủ không có bước build: mở là chạy.
+
+---
+
+## Ghi chú về GitHub Pages
+
+Repo có file `.nojekyll` ở gốc, **bắt buộc phải giữ**:
+
+Jekyll — bộ xử lý mặc định của GitHub Pages — bỏ qua mọi thư mục bắt đầu bằng `_`
+(vì dành riêng cho `_layouts`, `_posts`, `_includes`…). Khi mã nguồn trang chủ còn
+nằm trong `_hub/`, GitHub Pages không phục vụ thư mục đó nên `hub.css` và các file
+`.js` trả 404: trang vẫn mở nhưng **mất toàn bộ giao diện và không dựng được thẻ dự án**.
+
+Vì vậy thư mục đã đổi tên thành `hub/`, và `.nojekyll` giữ cho Jekyll luôn tắt —
+sau này có thêm thư mục bắt đầu bằng `_` cũng không bị lỗi lại.
 
 ---
 

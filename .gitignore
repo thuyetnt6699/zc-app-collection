@@ -2,7 +2,7 @@
 # Solar-System.mp4 nặng ~132MB, vượt giới hạn cứng 100MB của GitHub.
 # Cả 4 file cộng lại ~196MB → repo sẽ phình và clone rất chậm.
 # Cách dùng lại: tải video về đặt cạnh index.html (đúng tên bên dưới),
-# hoặc sửa trường "demo" trong _hub/projects.data.js thành link YouTube/Drive,
+# hoặc sửa trường "demo" trong hub/projects.data.js thành link YouTube/Drive,
 # rồi xoá cờ "demoDisabled" của dự án đó.
 #   Solar-System.mp4, FlappyBird.mp4, Whack-A-Mole.mp4, Hoc-Toan.mp4
 *.mp4

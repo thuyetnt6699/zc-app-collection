@@ -2,7 +2,7 @@
    HUB SMOKE TEST — chạy trọn trạm điều khiển trong Node bằng
    DOM giả: dựng thẻ, lọc, tìm kiếm, mở/đóng bảng chi tiết,
    chuyển dự án bằng bàn phím, chạy màn khởi động, lớp 3D.
-   Chạy: node _hub/test/hub-smoke.js
+   Chạy: node hub/test/hub-smoke.js
    ========================================================= */
 'use strict';
 
@@ -64,7 +64,7 @@ const files = ['projects.data.js', 'starfield.js', 'scene3d.js', 'cards.js', 'ov
 files.forEach((f) => {
   const code = fs.readFileSync(path.join(HUB, f), 'utf8');
   try {
-    vm.runInContext(code, sb, { filename: '_hub/' + f });
+    vm.runInContext(code, sb, { filename: 'hub/' + f });
   } catch (e) {
     fail('nạp ' + f + ' lỗi: ' + e.message);
   }
