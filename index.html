@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="dark" />
+<meta name="description" content="Trạm điều khiển dự án — nơi trưng bày toàn bộ dự án trong kho: game, mô phỏng 3D, ứng dụng học tập." />
+<meta name="theme-color" content="#04060d" />
+<title>TRẠM ĐIỀU KHIỂN — Kho Dự Án</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%2304060d'/><circle cx='50' cy='50' r='26' fill='none' stroke='%237df9ff' stroke-width='6'/><circle cx='50' cy='50' r='8' fill='%237df9ff'/></svg>" />
+
+<!-- Font là lớp tăng cường: nếu không có mạng, hub vẫn dùng font hệ thống -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" />
+
+<link rel="stylesheet" href="_hub/hub.css" />
+</head>
+<body>
+
+<!-- ============ NỀN VŨ TRỤ (canvas do _hub/starfield.js vẽ) ============ -->
+<div class="space" aria-hidden="true">
+  <canvas id="space-canvas"></canvas>
+  <div class="space-nebula" data-depth="0.15"></div>
+  <div class="space-grid"></div>
+  <div class="space-vignette"></div>
+</div>
+
+<!-- ============ TRANG TRÍ HUD TOÀN MÀN HÌNH ============ -->
+<div class="hud" aria-hidden="true">
+  <div class="hud-scanlines"></div>
+  <span class="hud-corner tl"></span><span class="hud-corner tr"></span>
+  <span class="hud-corner bl"></span><span class="hud-corner br"></span>
+  <div class="hud-ruler top"></div>
+  <div class="hud-ruler left"></div>
+</div>
+
+<!-- ============ MÀN KHỞI ĐỘNG ============ -->
+<div id="boot" class="boot" role="dialog" aria-label="Đang khởi động trạm điều khiển">
+  <div class="boot-frame">
+    <div class="boot-sigil"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span><b>K</b></div>
+    <h2 class="boot-title">TRẠM ĐIỀU KHIỂN</h2>
+    <div class="boot-sub">PROJECT HUB // SECTOR K-77</div>
+    <div class="boot-bar"><i id="boot-fill"></i></div>
+    <pre id="boot-log" class="boot-log" aria-live="polite"></pre>
+    <button id="boot-skip" class="boot-skip" type="button">BỎ QUA ▸</button>
+  </div>
+</div>
+
+<!-- ============ THANH ĐIỀU HƯỚNG ============ -->
+<header class="nav" data-depth="0.4">
+  <a class="brand" href="#top">
+    <span class="brand-mark"><i></i></span>
+    <span class="brand-text">
+      <b>TRẠM ĐIỀU KHIỂN</b>
+      <em>PROJECT HUB — K-77</em>
+    </span>
+  </a>
+  <nav class="nav-links" aria-label="Điều hướng chính">
+    <a href="#kho-du-an">KHO DỰ ÁN</a>
+    <a href="#thong-tin">THÔNG TIN</a>
+  </nav>
+  <div class="nav-status">
+    <span class="dot"></span>
+    <span class="nav-clock" id="nav-clock">--:--:--</span>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" aria-label="Giới thiệu trạm">
+    <div class="hero-copy" data-depth="0.6">
+      <p class="eyebrow"><span>◈</span> KHO DỰ ÁN // TRỰC TUYẾN</p>
+      <h1 class="hero-title">
+        <span class="glitch" data-text="TRẠM ĐIỀU KHIỂN">TRẠM ĐIỀU KHIỂN</span>
+      </h1>
+      <p class="hero-sub" id="hero-typed" aria-live="polite"></p>
+      <p class="hero-note">
+        Tất cả dự án trong kho được lắp vào một khung duy nhất. Thêm dự án mới chỉ cần
+        khai báo một mục dữ liệu — hệ thống tự dựng thẻ, bộ lọc và bảng chi tiết.
+      </p>
+      <div class="hero-actions">
+        <a class="btn primary" href="#kho-du-an"><span>▸ KHÁM PHÁ KHO DỰ ÁN</span></a>
+        <a class="btn ghost" href="docs/THEM-DU-AN-MOI.md" download><span>＋ THÊM DỰ ÁN MỚI</span></a>
+      </div>
+    </div>
+
+    <aside class="hero-scope" data-depth="0.9" aria-label="Sơ đồ quét của trạm">
+      <div class="scope-frame">
+        <div class="scope-radar"><i class="sweep"></i><i class="crosshair"></i><span class="ring r1"></span><span class="ring r2"></span></div>
+        <div class="scope-meta">
+          <div class="row"><span>CHẾ ĐỘ</span><b>TOÀN CẢNH</b></div>
+          <div class="row"><span>FPS</span><b id="hud-fps">--</b></div>
+          <div class="row"><span>DPR</span><b id="hud-dpr">--</b></div>
+          <div class="row"><span>GIỜ</span><b id="hud-time">--:--</b></div>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ============ DẢI CHỈ SỐ ============ -->
+  <section class="metrics" aria-label="Chỉ số kho dự án">
+    <div class="metric"><b data-count id="m-total">0</b><span>DỰ ÁN</span></div>
+    <div class="metric"><b data-count id="m-cats">0</b><span>LĨNH VỰC</span></div>
+    <div class="metric"><b data-count id="m-online">0</b><span>ĐANG CHẠY</span></div>
+    <div class="metric"><b data-count id="m-tech">0</b><span>CÔNG NGHỆ</span></div>
+  </section>
+
+  <!-- ============ KHO DỰ ÁN ============ -->
+  <section id="kho-du-an" class="bay">
+    <header class="bay-head">
+      <h2 class="bay-title"><span class="idx">01</span> KHO DỰ ÁN <em id="bay-count">— BAY 0/0</em></h2>
+      <p class="bay-hint">Nhấn vào thẻ để xem chi tiết · Nút <b>MỞ NGAY</b> trên thẻ để vào thẳng dự án · <b>←/→</b> chuyển dự án</p>
+    </header>
+
+    <div class="controls" data-depth="0.2">
+      <div class="filters" id="filters" role="group" aria-label="Lọc theo lĩnh vực"></div>
+      <div class="search">
+        <span class="search-icon">⌕</span>
+        <label class="sr-only" for="search-input">Tìm dự án</label>
+        <input id="search-input" type="search" placeholder="TÌM DỰ ÁN…" autocomplete="off" spellcheck="false" />
+        <button id="search-clear" class="search-clear" type="button" title="Xóa tìm kiếm" aria-label="Xóa tìm kiếm">✕</button>
+      </div>
+    </div>
+
+    <div class="grid-3d">
+      <div class="grid-track" id="project-grid" role="list" aria-live="polite"></div>
+      <p class="empty" id="empty-state" hidden>
+        <b>KHÔNG CÓ TÍN HIỆU</b>
+        <span>Không có dự án nào khớp bộ lọc hiện tại. Thử xóa từ khóa hoặc chọn lĩnh vực khác.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ THÔNG TIN THÊM DỰ ÁN ============ -->
+  <section id="thong-tin" class="brief">
+    <header class="bay-head">
+      <h2 class="bay-title"><span class="idx">02</span> MỞ RỘNG TRẠM</h2>
+      <p class="bay-hint">Khung này không cần sửa khi thêm dự án — chỉ dữ liệu thay đổi.</p>
+    </header>
+
+    <div class="brief-grid">
+      <article class="brief-card">
+        <span class="brief-no">01</span>
+        <h3>Khai báo dữ liệu</h3>
+        <p>Mở <code>_hub/projects.data.js</code> và thêm một object vào <code>HUB_PROJECTS</code> với <code>id</code>, <code>name</code>, <code>category</code>, <code>description</code>, <code>href</code>, <code>accent</code>, <code>icon</code>, <code>status</code>.</p>
+      </article>
+      <article class="brief-card">
+        <span class="brief-no">02</span>
+        <h3>Tự dựng giao diện</h3>
+        <p>Thẻ dự án, huy hiệu, bộ lọc theo lĩnh vực, ô tìm kiếm, dải chỉ số và bảng chi tiết đều sinh tự động từ dữ liệu — không phải viết thêm HTML hay CSS.</p>
+      </article>
+      <article class="brief-card">
+        <span class="brief-no">03</span>
+        <h3>Chạy kiểm tra</h3>
+        <p><code>node _hub/test/hub-test.js</code> sẽ xác nhận đủ trường, <code>id</code> không trùng và đường dẫn <code>href</code> trỏ tới file có thật trong kho. Hướng dẫn đầy đủ: <code>docs/THEM-DU-AN-MOI.md</code>.</p>
+      </article>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ CHÂN TRANG ============ -->
+<footer class="foot">
+  <div class="foot-line"></div>
+  <div class="foot-row">
+    <span>TRẠM ĐIỀU KHIỂN K-77 · <b id="foot-total">0</b> DỰ ÁN ĐANG ĐƯỢC THEO DÕI</span>
+    <span class="foot-sub">Dựng bằng Vanilla JS + Canvas 2D + CSS 3D — không CDN, chạy được cả khi ngoại tuyến</span>
+  </div>
+</footer>
+
+<!-- ============ BẢNG CHI TIẾT DỰ ÁN ============ -->
+<div id="detail" class="detail" hidden>
+  <div class="detail-backdrop" data-close></div>
+  <div class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detail-name">
+    <button id="detail-close" class="detail-close" type="button" title="Đóng (Esc)" aria-label="Đóng">✕</button>
+    <div class="detail-art" id="detail-art" aria-hidden="true"><canvas></canvas></div>
+
+    <div class="detail-body">
+      <p class="detail-cat" id="detail-cat"></p>
+      <h2 class="detail-name" id="detail-name"></h2>
+      <span class="detail-en" id="detail-en"></span>
+      <p class="detail-tagline" id="detail-tagline"></p>
+      <p class="detail-desc" id="detail-desc"></p>
+
+      <div class="detail-stats">
+        <div class="stat"><span class="k">LĨNH VỰC</span><b class="v" id="detail-cat2"></b></div>
+        <div class="stat"><span class="k">TRẠNG THÁI</span><b class="v" id="detail-status"></b></div>
+        <div class="stat"><span class="k">NĂM</span><b class="v" id="detail-year"></b></div>
+        <div class="stat"><span class="k">KẾT NỐI</span><b class="v" id="detail-net"></b></div>
+      </div>
+
+      <div class="detail-block" id="detail-tech-wrap">
+        <h3>CÔNG NGHỆ</h3>
+        <div class="chips" id="detail-tech"></div>
+      </div>
+
+      <div class="detail-actions">
+        <a class="btn primary" id="detail-open" href="#"><span>▸ MỞ DỰ ÁN</span></a>
+        <a class="btn ghost" id="detail-demo" href="#" download hidden><span>▶ XEM DEMO</span></a>
+      </div>
+      <p class="detail-tip" id="detail-tip" hidden></p>
+
+      <div class="detail-nav">
+        <button id="detail-prev" class="btn tiny" type="button"><span>‹ TRƯỚC</span></button>
+        <span class="detail-pos" id="detail-pos"></span>
+        <button id="detail-next" class="btn tiny" type="button"><span>SAU ›</span></button>
+      </div>
+    </div>
+
+    <span class="detail-corner tl"></span><span class="detail-corner tr"></span>
+    <span class="detail-corner bl"></span><span class="detail-corner br"></span>
+  </div>
+</div>
+
+<!-- ============ DỮ LIỆU + LOGIC ============ -->
+<script src="_hub/projects.data.js"></script>
+<script src="_hub/starfield.js"></script>
+<script src="_hub/scene3d.js"></script>
+<script src="_hub/cards.js"></script>
+<script src="_hub/overlay.js"></script>
+<script src="_hub/main.js"></script>
+</body>
+</html>

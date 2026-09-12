@@ -1,0 +1,10 @@
+{
+  "name": "hoc-phan-so-lop5",
+  "version": "1.0.0",
+  "description": "Website vui nhộn học phân số & hỗn số cho học sinh lớp 5 — câu hỏi sinh ngẫu nhiên, lời giải từng bước, phần thưởng & âm thanh. Chạy offline, không cần thư viện.",
+  "scripts": {
+    "test": "node test/generator-test.js && node test/dom-smoke.js",
+    "start": "npx serve ."
+  },
+  "license": "MIT"
+}

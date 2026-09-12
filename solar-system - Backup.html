@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="color-scheme" content="dark"/>
+<title>HỆ MẶT TRỜI 3D — Trạm Quan Sát K-77</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --cyan:#7df9ff; --cyan-dim:rgba(125,249,255,.28);
+  --bg:#04060d; --panel:rgba(7,14,26,.78);
+  --text:#d7ecff; --dim:#7d93b8; --gold:#ffd27d;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
+  font-family:'Rajdhani',system-ui,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
+#scene{position:fixed;inset:0}
+#scene canvas{display:block}
+
+#ui{position:fixed;inset:0;pointer-events:none;z-index:10}
+#ui>*{pointer-events:auto}
+#ui::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0 1px,transparent 1px 3px)}
+#ui::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(ellipse at center,transparent 52%,rgba(2,4,10,.5) 100%)}
+
+/* ---------- header ---------- */
+#title-block{position:absolute;top:20px;left:24px;z-index:2}
+#title-block h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:21px;letter-spacing:.38em;
+  color:#eefaff;text-shadow:0 0 16px rgba(125,249,255,.6),0 0 44px rgba(125,249,255,.25)}
+#title-block .sub{display:block;margin-top:6px;font-size:10px;letter-spacing:.42em;color:var(--dim)}
+#telemetry{position:absolute;top:22px;right:24px;z-index:2;text-align:right;
+  display:flex;flex-direction:column;gap:7px;font-size:10px;letter-spacing:.16em;color:var(--dim)}
+#telemetry .row{display:flex;justify-content:flex-end;align-items:baseline;gap:10px}
+#telemetry b{font-family:'Orbitron',sans-serif;font-size:12.5px;color:var(--cyan);
+  text-shadow:0 0 10px rgba(125,249,255,.5);font-weight:700;letter-spacing:.06em}
+
+/* ---------- nav list ---------- */
+#nav-list{position:absolute;left:20px;top:50%;transform:translateY(-50%);z-index:2;
+  display:flex;flex-direction:column;gap:4px}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:7px 14px 7px 10px;
+  background:rgba(7,14,26,.45);border:1px solid transparent;color:var(--dim);
+  font-family:'Rajdhani',sans-serif;font-weight:600;font-size:12.5px;letter-spacing:.14em;
+  cursor:pointer;transition:all .2s;text-align:left}
+.nav-btn:hover{color:var(--text);border-color:var(--cyan-dim);background:rgba(125,249,255,.06)}
+.nav-btn.active{color:#eefaff;border-color:var(--cyan-dim);background:rgba(125,249,255,.10);
+  box-shadow:0 0 16px rgba(125,249,255,.18),inset 0 0 12px rgba(125,249,255,.05)}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:var(--c,#888);
+  box-shadow:0 0 8px var(--c,#888);flex:none}
+
+/* ---------- info panel ---------- */
+#info-panel{position:absolute;top:86px;right:20px;bottom:92px;width:344px;
+  max-width:calc(100vw - 40px);background:var(--panel);border:1px solid var(--cyan-dim);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:20px 18px 24px;overflow-y:auto;z-index:2;
+  opacity:0;transform:translateX(36px);pointer-events:none!important;
+  transition:opacity .4s,transform .45s cubic-bezier(.2,.9,.25,1);
+  scrollbar-width:thin;scrollbar-color:rgba(125,249,255,.3) transparent}
+#info-panel::-webkit-scrollbar{width:6px}
+#info-panel::-webkit-scrollbar-thumb{background:rgba(125,249,255,.25)}
+#info-panel.open{opacity:1;transform:none;pointer-events:auto!important}
+#info-panel::before,#info-panel::after{content:"";position:absolute;width:14px;height:14px;
+  border:1px solid var(--cyan);opacity:.7;pointer-events:none}
+#info-panel::before{top:-1px;left:-1px;border-right:none;border-bottom:none}
+#info-panel::after{bottom:-1px;right:-1px;border-left:none;border-top:none}
+#info-close{position:absolute;top:10px;right:10px;width:28px;height:28px;background:none;
+  border:1px solid var(--cyan-dim);color:var(--dim);cursor:pointer;font-size:13px;transition:.2s;z-index:3}
+#info-close:hover{color:var(--cyan);border-color:var(--cyan);box-shadow:0 0 10px rgba(125,249,255,.35)}
+.ip-type{font-family:'Orbitron',sans-serif;font-size:9.5px;letter-spacing:.34em;color:var(--gold)}
+.ip-name{font-family:'Orbitron',sans-serif;font-size:22px;letter-spacing:.08em;margin-top:6px;
+  color:#eefaff;text-shadow:0 0 14px rgba(125,249,255,.45)}
+.ip-en{font-size:12px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase;
+  margin-top:2px;display:block}
+.ip-desc{margin:14px 0;font-size:14px;line-height:1.65;color:#b8d4f0;font-weight:500}
+.ip-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stat{background:rgba(125,249,255,.045);border:1px solid rgba(125,249,255,.08);padding:8px 10px}
+.stat .k{display:block;font-size:9px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+.stat .v{display:block;margin-top:4px;font-family:'Orbitron',sans-serif;font-size:12px;
+  color:#e6f6ff;letter-spacing:.02em}
+.ip-sub{margin-top:16px;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:.3em;
+  color:var(--gold);display:flex;align-items:center;gap:8px}
+.ip-sub::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--cyan-dim),transparent)}
+.ip-moons{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.moon-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(7,14,26,.5);
+  border:1px solid var(--cyan-dim);color:var(--text);font-family:'Rajdhani',sans-serif;
+  font-weight:600;font-size:12.5px;letter-spacing:.06em;cursor:pointer;transition:.18s;text-align:left}
+.moon-chip:hover{background:rgba(125,249,255,.12);color:#eefaff;box-shadow:0 0 12px rgba(125,249,255,.25)}
+#ip-parent{margin-top:14px;width:100%;padding:10px;background:rgba(125,249,255,.08);
+  border:1px solid var(--cyan-dim);color:var(--cyan);font-family:'Orbitron',sans-serif;
+  font-size:11px;letter-spacing:.22em;cursor:pointer;transition:.2s}
+#ip-parent:hover{background:rgba(125,249,255,.16);box-shadow:0 0 14px rgba(125,249,255,.3)}
+
+/* ---------- controls ---------- */
+#controls{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:2;
+  display:flex;align-items:center;gap:12px;background:var(--panel);
+  border:1px solid var(--cyan-dim);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:10px 16px}
+.ctl-btn{width:36px;height:36px;flex:none;background:rgba(125,249,255,.06);
+  border:1px solid var(--cyan-dim);color:var(--cyan);font-size:14px;cursor:pointer;
+  transition:.18s;display:flex;align-items:center;justify-content:center}
+.ctl-btn:hover{background:rgba(125,249,255,.16);box-shadow:0 0 12px rgba(125,249,255,.3)}
+.ctl-btn.toggle.active{background:rgba(125,249,255,.2);color:#eefaff}
+.ctl-btn.wide{width:auto;padding:0 12px;font-family:'Orbitron',sans-serif;font-size:10px;
+  letter-spacing:.22em}
+#speed-slider{width:200px;accent-color:var(--cyan);cursor:pointer}
+#speed-val{font-family:'Orbitron',sans-serif;font-size:11.5px;color:var(--cyan);
+  min-width:120px;text-align:left;letter-spacing:.04em}
+#ctl-div{width:1px;height:26px;background:var(--cyan-dim);flex:none}
+
+/* ---------- tooltip / hint ---------- */
+#tooltip{position:fixed;z-index:40;padding:5px 12px;background:rgba(7,14,26,.92);
+  border:1px solid var(--cyan-dim);color:#eefaff;font-size:12.5px;letter-spacing:.1em;
+  pointer-events:none;opacity:0;transition:opacity .12s;white-space:nowrap;
+  transform:translate(14px,-26px);font-family:'Rajdhani',sans-serif;font-weight:600}
+#tooltip .tt-sub{color:var(--dim);font-size:10.5px;margin-left:7px;letter-spacing:.14em;font-weight:500}
+#hint{position:absolute;bottom:20px;left:22px;z-index:2;font-size:11px;letter-spacing:.1em;
+  color:var(--dim);pointer-events:none!important}
+#hint b{color:var(--cyan);font-weight:600}
+
+/* ---------- loading ---------- */
+#loading{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;
+  align-items:center;justify-content:center;transition:opacity .7s}
+#loading.done{opacity:0;pointer-events:none}
+.load-frame{width:min(430px,82vw);text-align:center}
+.load-frame h2{font-family:'Orbitron',sans-serif;font-size:15px;letter-spacing:.42em;color:#eefaff;
+  text-shadow:0 0 18px rgba(125,249,255,.55);margin-bottom:22px}
+.load-bar{height:3px;background:rgba(125,249,255,.12);position:relative;overflow:hidden}
+#load-fill{position:absolute;inset:0;width:0%;background:linear-gradient(90deg,rgba(125,249,255,.4),var(--cyan));
+  box-shadow:0 0 14px rgba(125,249,255,.8);transition:width .25s}
+#load-txt{display:block;margin-top:14px;font-size:10px;letter-spacing:.3em;color:var(--dim)}
+.load-deco{margin-top:28px;font-family:'Orbitron',sans-serif;font-size:9px;
+  letter-spacing:.5em;color:rgba(125,249,255,.35)}
+
+@media (max-width:900px){
+  #nav-list{display:none}
+  #hint{display:none}
+  #info-panel{top:70px;bottom:118px;width:calc(100vw - 32px);right:16px}
+  #controls{flex-wrap:wrap;justify-content:center;max-width:94vw;gap:8px;bottom:12px}
+  #speed-slider{width:130px}
+  #telemetry .row:first-child{display:none}
+  #title-block h1{font-size:16px;letter-spacing:.3em}
+}
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="ui">
+  <div id="title-block">
+    <h1>HỆ MẶT TRỜI</h1>
+    <span class="sub">SOLAR SYSTEM // TRẠM QUAN SÁT K-77</span>
+  </div>
+
+  <div id="telemetry">
+    <div class="row"><span>THỜI GIAN MÔ PHỎNG</span><b id="sim-time">Ngày 0</b></div>
+    <div class="row"><span>TỐC ĐỘ</span><b id="speed-hud">—</b></div>
+  </div>
+
+  <nav id="nav-list"></nav>
+
+  <aside id="info-panel">
+    <button id="info-close" title="Đóng (Esc)">✕</button>
+    <span class="ip-type" id="ip-type"></span>
+    <h2 class="ip-name" id="ip-name"></h2>
+    <span class="ip-en" id="ip-en"></span>
+    <p class="ip-desc" id="ip-desc"></p>
+    <div class="ip-stats" id="ip-stats"></div>
+    <div id="ip-moons-wrap">
+      <div class="ip-sub">VỆ TINH</div>
+      <div class="ip-moons" id="ip-moons"></div>
+    </div>
+    <button id="ip-parent" style="display:none"></button>
+  </aside>
+
+  <div id="controls">
+    <button class="ctl-btn" id="btn-play" title="Tạm dừng / chạy (Space)">❚❚</button>
+    <input id="speed-slider" type="range" min="0" max="1000" value="370" title="Tốc độ thời gian"/>
+    <span id="speed-val">—</span>
+    <div id="ctl-div"></div>
+    <button class="ctl-btn wide" id="btn-labels" title="Bật/tắt nhãn tên">NHÃN</button>
+    <button class="ctl-btn wide" id="btn-orbits" title="Bật/tắt đường quỹ đạo">QUỸ ĐẠO</button>
+    <div id="ctl-div"></div>
+    <button class="ctl-btn" id="btn-reset" title="Về góc nhìn mặc định">⟲</button>
+  </div>
+
+  <div id="hint">Kéo chuột <b>xoay</b> · Lăn chuột <b>phóng</b> · Nhấp vào hành tinh / vệ tinh để <b>thăm dò</b> · <b>Space</b> tạm dừng · <b>Esc</b> thoát chọn</div>
+</div>
+
+<div id="tooltip"></div>
+
+<div id="loading">
+  <div class="load-frame">
+    <h2>ĐANG KHỞI ĐỘNG CẢNH VŨ TRỤ</h2>
+    <div class="load-bar"><div id="load-fill"></div></div>
+    <span id="load-txt">KHỞI TẠO…</span>
+    <div class="load-deco">DEEP FIELD ARRAY · K-77</div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ================= util ================= */
+const $ = s => document.querySelector(s);
+const TWO_PI = Math.PI * 2;
+const clamp = (v,a,b)=>Math.min(b,Math.max(a,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const nextFrame = ()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+function hashSeed(s){ let h=0; for(const ch of s) h=(h*31+ch.charCodeAt(0))|0; return Math.abs(h)%100000+1; }
+function mulberry(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0;
+  let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t;
+  return ((t^t>>>14)>>>0)/4294967296; }; }
+
+/* ================= DATA (tiếng Việt) ================= */
+const SUN = {
+  id:'sun', name:'Mặt Trời', en:'Sun', type:'NGÔI SAO · LÙN VÀNG G2V', accent:'#ffc24d',
+  r:14, rotDays:25.4,
+  desc:'Trung tâm của Hệ Mặt Trời, một quả cầu plasma khổng lồ chiếm 99,86% khối lượng toàn hệ. Mỗi giây, Mặt Trời chuyển hóa khoảng 600 triệu tấn hydro thành heli — nguồn gốc của mọi ánh sáng, nhiệt và sự sống quanh nó.',
+  stats:{ 'Đường kính':'1.392.700 km','Khối lượng':'1.989 × 10³⁰ kg','Nhiệt độ bề mặt':'5.500 °C','Nhiệt độ lõi':'15.000.000 °C','Chu kỳ tự quay':'25,4 ngày','Tuổi':'4,6 tỷ năm','Phổ sao':'G2V (lùn vàng)','Thành phần':'≈73% H · 25% He' }
+};
+
+const PLANETS = [
+  { id:'mercury', name:'Thủy Tinh', en:'Mercury', type:'HÀNH TINH ĐÁ', accent:'#cbb8a4',
+    r:0.9, dist:26, period:87.97, rotDays:58.65, tilt:0.03, tex:'mercury',
+    desc:'Hành tinh nhỏ nhất và gần Mặt Trời nhất. Bề mặt đầy hố va chạm giống Mặt Trăng, bầu khí quyển gần như bằng không nên nhiệt độ dao động cực đoan từ −173 °C về đêm đến 427 °C ban ngày.',
+    stats:{ 'Đường kính':'4.879 km','Khối lượng':'3.30 × 10²³ kg','Khoảng cách Mặt Trời':'0,39 AU · 57,9 triệu km','Chu kỳ quỹ đạo':'88 ngày','Chu kỳ tự quay':'58,6 ngày','Số vệ tinh':'0','Trọng trường':'3,70 m/s²','Nhiệt độ':'−173 → 427 °C' },
+    moons:[] },
+
+  { id:'venus', name:'Sao Kim', en:'Venus', type:'HÀNH TINH ĐÁ', accent:'#e8c88a',
+    r:1.45, dist:34, period:224.7, rotDays:-243.02, tilt:177.4, tex:'venus',
+    atmo:[0xe8c88a, 3.6, 0.7],
+    desc:'Hành tinh nóng nhất Hệ Mặt Trời (464 °C) do hiệu ứng nhà kính mất kiểm soát của lớp mây axit sunfuric dày đặc. Nó tự quay ngược chiều hầu hết hành tinh, với một "ngày" dài hơn cả một "năm".',
+    stats:{ 'Đường kính':'12.104 km','Khối lượng':'4.87 × 10²⁴ kg','Khoảng cách Mặt Trời':'0,72 AU · 108,2 triệu km','Chu kỳ quỹ đạo':'225 ngày','Chu kỳ tự quay':'243 ngày (ngược)','Số vệ tinh':'0','Trọng trường':'8,87 m/s²','Nhiệt độ':'464 °C' },
+    moons:[] },
+
+  { id:'earth', name:'Trái Đất', en:'Earth', type:'HÀNH TINH ĐÁ', accent:'#4da6ff',
+    r:1.5, dist:44, period:365.25, rotDays:0.997, tilt:23.44, tex:'earth',
+    atmo:[0x4da6ff, 3.2, 1.3],
+    desc:'Hành tinh duy nhất đã được biết có sự sống. 71% bề mặt được đại dương bao phủ, với bầu khí quyển nitơ–oxy và một vệ tinh lớn — Mặt Trăng — giúp ổn định độ nghiêng trục và chu kỳ thủy triều.',
+    stats:{ 'Đường kính':'12.742 km','Khối lượng':'5.97 × 10²⁴ kg','Khoảng cách Mặt Trời':'1 AU · 149,6 triệu km','Chu kỳ quỹ đạo':'365,25 ngày','Chu kỳ tự quay':'23,9 giờ','Số vệ tinh':'1','Trọng trường':'9,81 m/s²','Nhiệt độ':'15 °C (TB)' },
+    moons:[
+      { id:'moon', name:'Mặt Trăng', en:'The Moon', type:'VỆ TINH TỰ NHIÊN', accent:'#d9d9e2',
+        r:0.42, d:3.4, period:27.32, rotDays:27.32, tex:'moon', texBase:[168,168,174], craters:80,
+        desc:'Vệ tinh duy nhất của Trái Đất, hình thành từ vụ va chạm khổng lồ với thiên thể Theia cách đây ~4,5 tỷ năm. Lực hút của nó tạo ra thủy triều và giữ ổn định trục quay của hành tinh chúng ta.',
+        stats:{ 'Đường kính':'3.474 km','Khối lượng':'7.35 × 10²² kg','Khoảng cách tới Trái Đất':'384.400 km','Chu kỳ quỹ đạo':'27,3 ngày','Tự quay':'27,3 ngày (đồng bộ)','Trọng trường':'1,62 m/s²','Nhiệt độ':'−173 → 127 °C','Đặc điểm':'Khí quyển gần như bằng 0' } }
+    ] },
+
+  { id:'mars', name:'Sao Hỏa', en:'Mars', type:'HÀNH TINH ĐÁ', accent:'#ff6a3d',
+    r:1.15, dist:55, period:686.98, rotDays:1.026, tilt:25.19, tex:'mars',
+    desc:'Hành tinh Đỏ, phủ sắc oxit sắt. Nơi có núi lửa cao nhất Hệ Mặt Trời (Olympus Mons, 22 km) và rãnh Valles Marineris dài 4.000 km. Là mục tiêu hàng đầu cho các sứ mệnh có người lái.',
+    stats:{ 'Đường kính':'6.779 km','Khối lượng':'6.42 × 10²³ kg','Khoảng cách Mặt Trời':'1,52 AU · 227,9 triệu km','Chu kỳ quỹ đạo':'687 ngày','Chu kỳ tự quay':'24,6 giờ','Số vệ tinh':'2','Trọng trường':'3,71 m/s²','Nhiệt độ':'−63 °C (TB)' },
+    moons:[
+      { id:'phobos', name:'Phobos', en:'Phobos', type:'VỆ TINH TỰ NHIÊN', accent:'#a08a72',
+        r:0.22, d:2.1, period:0.319, rotDays:0.319, tex:'phobos', texBase:[122,104,88], craters:30, maxR:3,
+        desc:'Vệ tinh trong của Sao Hỏa, quay hết một vòng chỉ trong 7,66 giờ — nhanh hơn cả chu kỳ tự quay của Sao Hỏa, nên mọc ở tây và lặn ở đông. Nó đang từ từ rơi lại gần và sẽ vỡ trong ~50 triệu năm nữa.',
+        stats:{ 'Đường kính':'22,2 km','Khối lượng':'1.07 × 10¹⁶ kg','Khoảng cách tới Sao Hỏa':'9.376 km','Chu kỳ quỹ đạo':'7,66 giờ','Tự quay':'7,66 giờ (đồng bộ)','Trọng trường':'0,0057 m/s²','Nhiệt độ':'−40 → 50 °C','Đặc điểm':'Đang rơi lại gần Sao Hỏa' } },
+      { id:'deimos', name:'Deimos', en:'Deimos', type:'VỆ TINH TỰ NHIÊN', accent:'#9a8a78',
+        r:0.18, d:3.0, period:1.263, rotDays:1.263, tex:'deimos', texBase:[132,120,106], craters:25, maxR:3,
+        desc:'Vệ tinh ngoài nhỏ và mờ nhạt của Sao Hỏa, quỹ đạo ổn định và xa hơn. Nhiều khả năng là một tiểu hành tinh vành đai bị Sao Hỏa bắt giữ về trọng lực.',
+        stats:{ 'Đường kính':'12,4 km','Khối lượng':'1.52 × 10¹⁵ kg','Khoảng cách tới Sao Hỏa':'23.463 km','Chu kỳ quỹ đạo':'30,3 giờ','Tự quay':'30,3 giờ (đồng bộ)','Trọng trường':'0,0003 m/s²','Nhiệt độ':'−30 → 60 °C','Đặc điểm':'Có thể là tiểu hành tinh bị bắt' } }
+    ] },
+
+  { id:'jupiter', name:'Sao Mộc', en:'Jupiter', type:'HÀNH TINH KHÍ', accent:'#e0b080',
+    r:5.5, dist:78, period:4332.6, rotDays:0.414, tilt:3.13, tex:'jupiter',
+    desc:'Hành tinh lớn nhất, nặng gấp 2,5 lần tổng khối lượng các hành tinh còn lại cộng lại. Vết Sót Đỏ Lớn là một siêu bão lớn hơn Trái Đất, đã gầm rít ít nhất 300 năm.',
+    stats:{ 'Đường kính':'139.820 km','Khối lượng':'1.90 × 10²⁷ kg','Khoảng cách Mặt Trời':'5,20 AU · 778,5 triệu km','Chu kỳ quỹ đạo':'11,9 năm','Chu kỳ tự quay':'9,9 giờ','Số vệ tinh':'95','Trọng trường':'24,79 m/s²','Nhiệt độ':'−108 °C' },
+    moons:[
+      { id:'io', name:'Io', en:'Io', type:'VỆ TINH TỰ NHIÊN', accent:'#e8c060',
+        r:0.32, d:7.6, period:1.769, rotDays:1.769, tex:'io', texBase:[206,168,88], craters:40, maxR:3,
+        desc:'Thiên thể núi lửa hoạt động nhất Hệ Mặt Trời với hơn 400 miệng núi lửa, bị bóp méo liên tục bởi lực thủy triều từ Sao Mộc. Các núi lửa phun lưu huỳnh và khí SO₂ cao hàng trăm km.',
+        stats:{ 'Đường kính':'3.643 km','Khối lượng':'8.93 × 10²² kg','Khoảng cách tới Sao Mộc':'421.700 km','Chu kỳ quỹ đạo':'1,77 ngày','Tự quay':'1,77 ngày (đồng bộ)','Trọng trường':'1,796 m/s²','Nhiệt độ':'≈ −143 °C','Đặc điểm':'Nhiều núi lửa nhất Hệ MT' } },
+      { id:'europa', name:'Europa', en:'Europa', type:'VỆ TINH TỰ NHIÊN', accent:'#d8c8a8',
+        r:0.28, d:8.8, period:3.551, rotDays:3.551, tex:'europa', texBase:[214,198,172], craters:12, maxR:3,
+        desc:'Bề mặt băng gần như không có hố va chạm, bị rạn bởi các vệt nâu đỏ. Dưới lớp băng 10–30 km là đại dương nước lỏng chứa gấp đôi lượng nước Trái Đất — ứng viên hàng đầu cho sự sống ngoài hành tinh.',
+        stats:{ 'Đường kính':'3.122 km','Khối lượng':'4.80 × 10²² kg','Khoảng cách tới Sao Mộc':'671.034 km','Chu kỳ quỹ đạo':'3,55 ngày','Tự quay':'3,55 ngày (đồng bộ)','Trọng trường':'1,314 m/s²','Nhiệt độ':'≈ −160 °C','Đặc điểm':'Đại dương dưới lớp băng' } },
+      { id:'ganymede', name:'Ganymede', en:'Ganymede', type:'VỆ TINH TỰ NHIÊN', accent:'#b8a890',
+        r:0.42, d:10.4, period:7.155, rotDays:7.155, tex:'ganymede', texBase:[152,142,130], craters:70,
+        desc:'Vệ tinh lớn nhất Hệ Mặt Trời — lớn hơn cả hành tinh Thủy Tinh, và là vệ tinh duy nhất sở hữu từ trường riêng, được tạo ra bởi lõi sắt nóng chảy bên trong.',
+        stats:{ 'Đường kính':'5.268 km','Khối lượng':'1.48 × 10²³ kg','Khoảng cách tới Sao Mộc':'1.070.412 km','Chu kỳ quỹ đạo':'7,15 ngày','Tự quay':'7,15 ngày (đồng bộ)','Trọng trường':'1,428 m/s²','Nhiệt độ':'≈ −163 °C','Đặc điểm':'Vệ tinh lớn nhất Hệ MT' } },
+      { id:'callisto', name:'Callisto', en:'Callisto', type:'VỆ TINH TỰ NHIÊN', accent:'#8a8478',
+        r:0.36, d:12.4, period:16.689, rotDays:16.689, tex:'callisto', texBase:[112,106,98], craters:120,
+        desc:'Một trong những bề mặt bị va chạm nhiều nhất Hệ Mặt Trời, với hố chồng hố trải đều — dấu vết của hơn 4 tỷ năm lịch sử không bị xáo trộn bởi kiến tạo.',
+        stats:{ 'Đường kính':'4.821 km','Khối lượng':'1.08 × 10²³ kg','Khoảng cách tới Sao Mộc':'1.882.709 km','Chu kỳ quỹ đạo':'16,7 ngày','Tự quay':'16,7 ngày (đồng bộ)','Trọng trường':'0,829 m/s²','Nhiệt độ':'≈ −155 °C','Đặc điểm':'Nhiều hố va chạm nhất' } }
+    ] },
+
+  { id:'saturn', name:'Sao Thổ', en:'Saturn', type:'HÀNH TINH KHÍ', accent:'#f0d9a8',
+    r:4.7, dist:105, period:10759, rotDays:0.444, tilt:26.73, tex:'saturn',
+    rings:[6.2, 11.4, 'saturn'],
+    desc:'Nổi tiếng với hệ vành đai băng rộng tới 280.000 km nhưng dày chỉ vài chục mét. Mật độ trung bình thấp hơn nước — nếu có một đại dương đủ lớn, Sao Thổ sẽ nổi trên mặt nước.',
+    stats:{ 'Đường kính':'116.460 km','Khối lượng':'5.68 × 10²⁶ kg','Khoảng cách Mặt Trời':'9,58 AU · 1,43 tỷ km','Chu kỳ quỹ đạo':'29,5 năm','Chu kỳ tự quay':'10,7 giờ','Số vệ tinh':'146','Trọng trường':'10,44 m/s²','Nhiệt độ':'−139 °C' },
+    moons:[
+      { id:'mimas', name:'Mimas', en:'Mimas', type:'VỆ TINH TỰ NHIÊN', accent:'#c8c8cc',
+        r:0.2, d:13.2, period:0.942, rotDays:0.942, tex:'mimas', texBase:[180,180,184], craters:50, maxR:4,
+        desc:'Biệt danh "Hộp diêm chiến tranh" nhờ hố va chạm Herschel khổng lồ chiếm gần một phần ba đường kính — đủ lớn để khiến cả vệ tinh rung lên như chiếc chuông sau cú va chạm.',
+        stats:{ 'Đường kính':'396 km','Khối lượng':'3.75 × 10¹⁹ kg','Khoảng cách tới Sao Thổ':'185.520 km','Chu kỳ quỹ đạo':'22,6 giờ','Tự quay':'22,6 giờ (đồng bộ)','Trọng trường':'0,060 m/s²','Nhiệt độ':'≈ −198 °C','Đặc điểm':'Hố Herschel khổng lồ' } },
+      { id:'enceladus', name:'Enceladus', en:'Enceladus', type:'VỆ TINH TỰ NHIÊN', accent:'#e8f0f4',
+        r:0.2, d:14.2, period:1.370, rotDays:1.370, tex:'enceladus', texBase:[234,238,242], craters:20, maxR:3,
+        desc:'Phun những cột băng và nước từ cực nam ra không gian, cung cấp "nguyên liệu" cho vành đai F của Sao Thổ. Nguồn năng lượng thủy triều gợi ý một đại dương ngầm ấm áp bên dưới.',
+        stats:{ 'Đường kính':'504 km','Khối lượng':'1.08 × 10²⁰ kg','Khoảng cách tới Sao Thổ':'237.948 km','Chu kỳ quỹ đạo':'11,4 giờ','Tự quay':'11,4 giờ (đồng bộ)','Trọng trường':'0,079 m/s²','Nhiệt độ':'≈ −200 °C','Đặc điểm':'Geysers nước từ cực nam' } },
+      { id:'tethys', name:'Tethys', en:'Tethys', type:'VỆ TINH TỰ NHIÊN', accent:'#cdd0d4',
+        r:0.26, d:15.2, period:1.888, rotDays:1.888, tex:'tethys', texBase:[198,200,204], craters:40, maxR:4,
+        desc:'Sở hữu rãnh tuyến hình chữ U Ithaca Chasma dài 250 km chạy gần như quanh toàn bộ bề mặt, cùng vùng cao nguyên sáng Odysseus đầy bí ẩn.',
+        stats:{ 'Đường kính':'1.062 km','Khối lượng':'6.19 × 10²⁰ kg','Khoảng cách tới Sao Thổ':'294.619 km','Chu kỳ quỹ đạo':'15,9 giờ','Tự quay':'15,9 giờ (đồng bộ)','Trọng trường':'0,049 m/s²','Nhiệt độ':'≈ −189 °C','Đặc điểm':'Rãnh Ithaca Chasma 250 km' } },
+      { id:'dione', name:'Dione', en:'Dione', type:'VỆ TINH TỰ NHIÊN', accent:'#b8b6b2',
+        r:0.27, d:16.3, period:2.738, rotDays:2.738, tex:'dione', texBase:[170,168,164], craters:55, maxR:4,
+        desc:'Nổi tiếng với những vệt sọc trắng chạy dọc theo các hố va chạm, được ví như "cỏ" trên đồng — có thể là băng nước phun ra từ sâu bên trong sau các vụ va chạm.',
+        stats:{ 'Đường kính':'1.118 km','Khối lượng':'1.09 × 10²¹ kg','Khoảng cách tới Sao Thổ':'377.396 km','Chu kỳ quỹ đạo':'1,52 ngày','Tự quay':'1,52 ngày (đồng bộ)','Trọng trường':'0,050 m/s²','Nhiệt độ':'≈ −188 °C','Đặc điểm':'Vệt băng trắng "cỏ"' } },
+      { id:'rhea', name:'Rhea', en:'Rhea', type:'VỆ TINH TỰ NHIÊN', accent:'#c4c4c8',
+        r:0.3, d:17.8, period:4.518, rotDays:4.518, tex:'rhea', texBase:[182,182,186], craters:60, maxR:4,
+        desc:'Vệ tinh lớn thứ hai của Sao Thổ, bề mặt đầy hố va chạm cổ. Cassini từng phát hiện dấu vết của một vành đai bụi mảnh bao quanh nó.',
+        stats:{ 'Đường kính':'1.527 km','Khối lượng':'2.31 × 10²¹ kg','Khoảng cách tới Sao Thổ':'527.108 km','Chu kỳ quỹ đạo':'2,45 ngày','Tự quay':'2,45 ngày (đồng bộ)','Trọng trường':'0,078 m/s²','Nhiệt độ':'≈ −185 °C','Đặc điểm':'Vệ tinh lớn thứ 2 của Saturn' } },
+      { id:'titan', name:'Titan', en:'Titan', type:'VỆ TINH TỰ NHIÊN', accent:'#e8963c',
+        r:0.45, d:21.5, period:15.945, rotDays:15.945, tex:'titan', texBase:[196,132,66], craters:0,
+        atmo:[0xd88a3c, 3.0, 1.5],
+        desc:'Vệ tinh lớn nhất Sao Thổ và lớn thứ hai Hệ Mặt Trời. Bầu khí quyển nitơ dày che mờ bề mặt, nơi có sông, hồ và mưa methane lỏng — thế giới ngoài Trái Đất "giống" Trái Đất nhất.',
+        stats:{ 'Đường kính':'5.150 km','Khối lượng':'1.345 × 10²³ kg','Khoảng cách tới Sao Thổ':'1.221.870 km','Chu kỳ quỹ đạo':'15,9 ngày','Tự quay':'15,9 ngày (đồng bộ)','Trọng trường':'0,883 m/s²','Nhiệt độ':'≈ −179 °C','Đặc điểm':'Khí quyển dày · hồ methane' } }
+    ] },
+
+  { id:'uranus', name:'Sao Thiên Vương', en:'Uranus', type:'HÀNH TINH BĂNG', accent:'#9fe8e0',
+    r:2.9, dist:130, period:30687, rotDays:-0.718, tilt:97.77, tex:'uranus',
+    rings:[4.3, 5.4, 'uranus'], atmo:[0x9fe8e0, 3.6, 0.5],
+    desc:'Hành tinh băng "nằm nghiêng" với trục lệch 98° — nó gần như lăn trên quỹ đạo quanh Mặt Trời, mỗi cực phải chịu 42 năm ánh sáng liên tục rồi 42 năm bóng tối. Được phát hiện năm 1781.',
+    stats:{ 'Đường kính':'50.724 km','Khối lượng':'8.68 × 10²⁵ kg','Khoảng cách Mặt Trời':'19,2 AU · 2,87 tỷ km','Chu kỳ quỹ đạo':'84 năm','Chu kỳ tự quay':'17,2 giờ (ngược)','Số vệ tinh':'28','Trọng trường':'8,87 m/s²','Nhiệt độ':'−195 °C' },
+    moons:[
+      { id:'miranda', name:'Miranda', en:'Miranda', type:'VỆ TINH TỰ NHIÊN', accent:'#b0b0b4',
+        r:0.18, d:4.6, period:1.413, rotDays:1.413, tex:'miranda', texBase:[162,162,166], craters:50, maxR:3,
+        desc:'Bề mặt "vỡ vụn" với ba loại địa hình khác nhau chồng lên nhau, gợi ý nó từng vỡ tan rồi tự lắp lại. Có những vách đá cao tới 20 km — cao nhất Hệ Mặt Trời tính theo tỷ lệ.',
+        stats:{ 'Đường kính':'472 km','Khối lượng':'6.59 × 10¹⁹ kg','Khoảng cách tới Uranus':'129.390 km','Chu kỳ quỹ đạo':'1,41 ngày','Tự quay':'1,41 ngày (đồng bộ)','Trọng trường':'0,062 m/s²','Nhiệt độ':'≈ −204 °C','Đặc điểm':'Địa hình "vỡ vụn" chồng lớp' } },
+      { id:'ariel', name:'Ariel', en:'Ariel', type:'VỆ TINH TỰ NHIÊN', accent:'#c4c6ca',
+        r:0.24, d:5.4, period:2.52, rotDays:2.52, tex:'ariel', texBase:[190,192,196], craters:45, maxR:3,
+        desc:'Vệ tinh sáng nhất của Sao Thiên Vương, với các "kênh" băng sáng màu trải dài — có thể là các thung lũng cổ được lấp đầy băng hoặc dung dịch đóng băng.',
+        stats:{ 'Đường kính':'1.158 km','Khối lượng':'1.35 × 10²¹ kg','Khoảng cách tới Uranus':'190.900 km','Chu kỳ quỹ đạo':'2,52 ngày','Tự quay':'2,52 ngày (đồng bộ)','Trọng trường':'0,068 m/s²','Nhiệt độ':'≈ −196 °C','Đặc điểm':'Vệ tinh sáng nhất của Uranus' } },
+      { id:'umbriel', name:'Umbriel', en:'Umbriel', type:'VỆ TINH TỰ NHIÊN', accent:'#7a787c',
+        r:0.25, d:6.2, period:4.144, rotDays:4.144, tex:'umbriel', texBase:[98,96,100], craters:40, maxR:4,
+        desc:'Vệ tinh tối màu và ít hố va chạm của Sao Thiên Vương, nổi tiếng với hai "vết sẹo" hình lưỡi liềm khổng lồ — nguồn gốc đến nay vẫn là ẩn số.',
+        stats:{ 'Đường kính':'1.169 km','Khối lượng':'1.49 × 10²¹ kg','Khoảng cách tới Uranus':'266.000 km','Chu kỳ quỹ đạo':'4,14 ngày','Tự quay':'4,14 ngày (đồng bộ)','Trọng trường':'0,071 m/s²','Nhiệt độ':'≈ −198 °C','Đặc điểm':'Hai vệt "lưỡi liềm" bí ẩn' } },
+      { id:'titania', name:'Titania', en:'Titania', type:'VỆ TINH TỰ NHIÊN', accent:'#b4b2b4',
+        r:0.3, d:7.3, period:8.706, rotDays:8.706, tex:'titania', texBase:[160,158,160], craters:60, maxR:4,
+        desc:'Vệ tinh lớn nhất của Sao Thiên Vương, sở hữu hệ thống thung lũng phức tạp Ophel Dorsa — những vết đứt gãy kiến tạo sâu hàng chục km.',
+        stats:{ 'Đường kính':'1.578 km','Khối lượng':'3.53 × 10²¹ kg','Khoảng cách tới Uranus':'436.300 km','Chu kỳ quỹ đạo':'8,71 ngày','Tự quay':'8,71 ngày (đồng bộ)','Trọng trường':'0,085 m/s²','Nhiệt độ':'≈ −200 °C','Đặc điểm':'Vệ tinh lớn nhất của Uranus' } },
+      { id:'oberon', name:'Oberon', en:'Oberon', type:'VỆ TINH TỰ NHIÊN', accent:'#a8a6a8',
+        r:0.28, d:8.4, period:13.46, rotDays:13.46, tex:'oberon', texBase:[152,150,152], craters:70, maxR:4,
+        desc:'Vệ tinh ngoài lớn nhất của Sao Thiên Vương, bề mặt phủ đầy hố va chạm cổ. Một số nhà khoa học cho rằng bên trong nó có thể tồn tại một lớp đại dương nước mỏng.',
+        stats:{ 'Đường kính':'1.523 km','Khối lượng':'3.01 × 10²¹ kg','Khoảng cách tới Uranus':'583.520 km','Chu kỳ quỹ đạo':'13,46 ngày','Tự quay':'13,46 ngày (đồng bộ)','Trọng trường':'0,083 m/s²','Nhiệt độ':'≈ −198 °C','Đặc điểm':'Bề mặt hố va chạm cổ' } }
+    ] },
+
+  { id:'neptune', name:'Sao Hải Vương', en:'Neptune', type:'HÀNH TINH BĂNG', accent:'#4a7dff',
+    r:2.8, dist:152, period:60190, rotDays:0.671, tilt:28.32, tex:'neptune',
+    atmo:[0x4a7dff, 3.6, 0.65],
+    desc:'Hành tinh xa nhất, với những cơn gió mạnh nhất Hệ Mặt Trời (lên tới 2.100 km/h). Được phát hiện bằng toán học năm 1846 — tính toán trước, rồi mới quan sát thấy.',
+    stats:{ 'Đường kính':'49.244 km','Khối lượng':'1.02 × 10²⁶ kg','Khoảng cách Mặt Trời':'30,1 AU · 4,50 tỷ km','Chu kỳ quỹ đạo':'164,8 năm','Chu kỳ tự quay':'16,1 giờ','Số vệ tinh':'16','Trọng trường':'11,15 m/s²','Nhiệt độ':'−201 °C' },
+    moons:[
+      { id:'triton', name:'Triton', en:'Triton', type:'VỆ TINH TỰ NHIÊN', accent:'#e0c0b0',
+        r:0.35, d:5.6, period:-5.877, rotDays:-5.877, tex:'triton', texBase:[198,178,166], craters:30, maxR:3,
+        desc:'Quay ngược chiều quỹ đạo — dấu vết của một thiên thể vành đai Kuiper bị Sao Hải Vương bắt giữ. Các geyser nitơ của nó phun lên cao 8 km từ bề mặt lạnh nhất Hệ Mặt Trời.',
+        stats:{ 'Đường kính':'2.707 km','Khối lượng':'2.14 × 10²² kg','Khoảng cách tới Neptune':'354.759 km','Chu kỳ quỹ đạo':'5,88 ngày (ngược)','Tự quay':'5,88 ngày (ngược)','Trọng trường':'0,779 m/s²','Nhiệt độ':'≈ −235 °C','Đặc điểm':'Thiên thể Kuiper bị bắt' } },
+      { id:'nereid', name:'Nereid', en:'Nereid', type:'VỆ TINH TỰ NHIÊN', accent:'#8a8684',
+        r:0.15, d:9.5, period:360.1, rotDays:360.1, tex:'nereid', texBase:[112,108,106], craters:30, maxR:3,
+        desc:'Có quỹ đạo elip rất dẹt: khoảng cách tới Sao Hải Vương dao động từ 1,4 đến 36 triệu km. Từng được cho là vệ tinh lớn thứ hai của hành tinh này.',
+        stats:{ 'Đường kính':'≈ 340 km','Khối lượng':'3.30 × 10¹⁹ kg','Khoảng cách tới Neptune':'TB 5.513.400 km','Chu kỳ quỹ đạo':'360,1 ngày','Tự quay':'≈ 360 ngày (đồng bộ)','Trọng trường':'0,0064 m/s²','Nhiệt độ':'≈ −220 °C','Đặc điểm':'Quỹ đạo elip rất dẹt' } }
+    ] }
+];
+
+/* ================= NOISE ================= */
+function makeNoise3D(seed){
+  const hash=(x,y,z)=>{ const s=Math.sin(x*127.1+y*311.7+z*74.7+seed*0.137)*43758.5453123; return s-Math.floor(s); };
+  const sm=t=>t*t*(3-2*t);
+  return function(x,y,z){
+    const xi=Math.floor(x), yi=Math.floor(y), zi=Math.floor(z);
+    const xf=x-xi, yf=y-yi, zf=z-zi;
+    const u=sm(xf), v=sm(yf), w=sm(zf);
+    return hash(xi,yi,zi)*(1-u)*(1-v)*(1-w)+hash(xi+1,yi,zi)*u*(1-v)*(1-w)
+          +hash(xi,yi+1,zi)*(1-u)*v*(1-w)+hash(xi+1,yi+1,zi)*u*v*(1-w)
+          +hash(xi,yi,zi+1)*(1-u)*(1-v)*w+hash(xi+1,yi,zi+1)*u*(1-v)*w
+          +hash(xi,yi+1,zi+1)*(1-u)*v*w+hash(xi+1,yi+1,zi+1)*u*v*w;
+  };
+}
+function fbm3(nz,x,y,z,oct=4){
+  let a=0, amp=1, f=1, tot=0;
+  for(let i=0;i<oct;i++){ a+=nz(x*f,y*f,z*f)*amp; tot+=amp; amp*=0.5; f*=2; }
+  return a/tot;
+}
+function wrapDist(a,b){ let d=Math.abs(a-b)%1; return d>0.5?1-d:d; }
+
+/* ================= TEXTURES ================= */
+function makeCanvasTexture(canvas){
+  const t=new THREE.CanvasTexture(canvas);
+  t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8;
+  return t;
+}
+function drawCraters(g,w,h,n,rnd,maxR=6,alpha=0.25){
+  for(let i=0;i<n;i++){
+    const x=rnd()*w, y=h*0.02+rnd()*h*0.96, r=1+rnd()*rnd()*maxR;
+    const offs = x>r ? [0,-w] : (x<w-r ? [0,w] : [0]);
+    for(const ox of offs){
+      const cx2=x+ox;
+      const gr=g.createRadialGradient(cx2,y,r*0.2,cx2,y,r);
+      gr.addColorStop(0,`rgba(0,0,0,${alpha})`);
+      gr.addColorStop(0.75,`rgba(0,0,0,${alpha*0.35})`);
+      gr.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=gr; g.beginPath(); g.arc(cx2,y,r,0,TWO_PI); g.fill();
+      g.strokeStyle=`rgba(255,255,255,${alpha*0.5})`; g.lineWidth=0.8;
+      g.beginPath(); g.arc(cx2,y,r*0.9,Math.PI*0.9,Math.PI*1.9); g.stroke();
+    }
+  }
+}
+
+function buildPlanetTexture(kind,w,h,seed){
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const g=c.getContext('2d');
+  const img=g.createImageData(w,h); const d=img.data;
+  const nz=makeNoise3D(seed);
+  const F=(x,y,z,o)=>fbm3(nz,x,y,z,o);
+  for(let y=0;y<h;y++){
+    const v=y/h;
+    const absLat=Math.abs(v-0.5)*2;
+    for(let x=0;x<w;x++){
+      const th=x/w*TWO_PI, cx=Math.cos(th), sx=Math.sin(th);
+      let r=200, gg=200, b=200;
+      if(kind==='sun'){
+        const n=F(cx*2.4,sx*2.4,v*3.2,4);
+        const m2=F(cx*7+13.7,sx*7+2.1,v*9+4.2,3);
+        const t2=clamp(n*0.75+m2*0.4,0,1);
+        r=255; gg=clamp(120+t2*125,0,255); b=clamp(16+t2*104,0,255);
+        if(m2>0.74){ r*=0.72; gg*=0.55; b*=0.45; }
+      } else if(kind==='mercury'){
+        const n=F(cx*2.6,sx*2.6,v*5.2,4);
+        const base=104+(n-0.5)*78;
+        r=base*1.03; gg=base*0.99; b=base*0.93;
+      } else if(kind==='venus'){
+        const n=F(cx*3.1+5,sx*3.1,v*5.2+2,4);
+        const s=F(cx*8.5+1.3,sx*8.5,v*13+7,3);
+        const t2=clamp(0.5+(n-0.5)*0.62+(s-0.5)*0.38,0,1);
+        r=lerp(198,246,t2); gg=lerp(158,224,t2); b=lerp(104,180,t2);
+      } else if(kind==='earth'){
+        const cont=F(cx*2.0,sx*2.0,v*4.0,4);
+        const det=F(cx*6.5+9.2,sx*6.5,v*13+3.1,4);
+        if(cont>0.525){
+          const hl=clamp((cont-0.525)/0.475,0,1);
+          r=lerp(52,128,hl*0.6+det*0.4);
+          gg=lerp(96,92,hl*0.5+det*0.5);
+          b=lerp(46,58,det);
+        } else {
+          const dep=clamp((0.525-cont)/0.525,0,1);
+          r=lerp(26,10,dep); gg=lerp(88,42,dep); b=lerp(150,112,dep);
+        }
+        if(absLat>0.80+(det-0.5)*0.12){ r=236; gg=241; b=248; }
+        const cl=F(cx*5.2+21.7,sx*5.2,v*10.4+11.3,4);
+        if(cl>0.62){ const a=clamp((cl-0.62)/0.38,0,1)*0.85; r=lerp(r,255,a); gg=lerp(gg,255,a); b=lerp(b,255,a); }
+      } else if(kind==='mars'){
+        const n=F(cx*2.3,sx*2.3,v*4.6,4);
+        const d2=F(cx*5.4+4.1,sx*5.4,v*10.8+8.2,4);
+        const t2=clamp(n,0,1);
+        r=lerp(148,216,t2); gg=lerp(60,110,t2); b=lerp(28,54,t2);
+        if(d2>0.62){ r*=0.7; gg*=0.66; b*=0.64; }
+        if(absLat>0.86+(n-0.5)*0.08){ r=236; gg=229; b=220; }
+      } else if(kind==='jupiter'){
+        const pal=[[226,203,168],[198,150,104],[236,222,196],[172,110,72],[228,202,162],[158,96,66],[242,230,206],[202,162,118]];
+        const wob=(F(cx*2.6+1,sx*2.6,v*5.2,3)-0.5)*1.1;
+        const bi=v*pal.length+wob;
+        let i0=Math.floor(bi)%pal.length; if(i0<0)i0+=pal.length;
+        const i1=(i0+1)%pal.length;
+        const f=bi-Math.floor(bi);
+        const A=pal[i0], B=pal[i1];
+        r=lerp(A[0],B[0],f); gg=lerp(A[1],B[1],f); b=lerp(A[2],B[2],f);
+        const s=F(cx*7.5+3.3,sx*7.5,v*42,3);
+        r+=(s-0.5)*24; gg+=(s-0.5)*19; b+=(s-0.5)*14;
+        const dx=wrapDist(x/w,0.30), dy=v-0.63;
+        const e2=(dx*7.5)**2+(dy*17)**2;
+        if(e2<1){ const t3=1-e2; r=lerp(r,198,clamp(t3*0.9,0,1)); gg=lerp(gg,84,clamp(t3*0.85,0,1)); b=lerp(b,60,clamp(t3*0.8,0,1)); }
+      } else if(kind==='saturn'){
+        const pal=[[234,216,172],[216,190,142],[240,228,192],[206,178,130],[236,220,180],[218,192,146]];
+        const wob=(F(cx*2.2+4,sx*2.2,v*4.6,3)-0.5)*0.8;
+        const bi=v*pal.length+wob;
+        let i0=Math.floor(bi)%pal.length; if(i0<0)i0+=pal.length;
+        const i1=(i0+1)%pal.length;
+        const f=bi-Math.floor(bi);
+        const A=pal[i0], B=pal[i1];
+        r=lerp(A[0],B[0],f); gg=lerp(A[1],B[1],f); b=lerp(A[2],B[2],f);
+        const s=F(cx*6+8,sx*6,v*30,3);
+        r+=(s-0.5)*12; gg+=(s-0.5)*10; b+=(s-0.5)*8;
+      } else if(kind==='uranus'){
+        const n=F(cx*2.2,sx*2.2,v*4.4,3);
+        const band=Math.sin(v*Math.PI*7)*0.5+0.5;
+        r=lerp(156,172,band)+(n-0.5)*14;
+        gg=lerp(212,222,band)+(n-0.5)*10;
+        b=lerp(218,228,band)+(n-0.5)*8;
+      } else if(kind==='neptune'){
+        const n=F(cx*2.6,sx*2.6,v*5.2,4);
+        const s=F(cx*6.4+5.5,sx*6.4,v*21,3);
+        const t2=clamp(n*0.62+s*0.38,0,1);
+        r=lerp(36,72,t2); gg=lerp(68,122,t2); b=lerp(168,222,t2);
+        if(s>0.74){ r+=26; gg+=32; b+=22; }
+        const dx=wrapDist(x/w,0.62), dy=v-0.42;
+        const e2=(dx*8)**2+(dy*14)**2;
+        if(e2<1){ const t3=1-e2; r=lerp(r,14,t3*0.8); gg=lerp(gg,28,t3*0.8); b=lerp(b,88,t3*0.8); }
+      }
+      const i=(y*w+x)*4; d[i]=clamp(r,0,255); d[i+1]=clamp(gg,0,255); d[i+2]=clamp(b,0,255); d[i+3]=255;
+    }
+  }
+  g.putImageData(img,0,0);
+  const rnd=mulberry(seed+3);
+  if(kind==='mercury') drawCraters(g,w,h,90,rnd,6,0.22);
+  if(kind==='mars') drawCraters(g,w,h,40,rnd,2.6,0.10);
+  return makeCanvasTexture(c);
+}
+
+function buildMoonTexture(m){
+  const w=256,h=128;
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const g=c.getContext('2d');
+  const img=g.createImageData(w,h); const d=img.data;
+  const base=m.texBase||[170,170,174];
+  const nz=makeNoise3D(hashSeed(m.id));
+  const F=(x,y,z,o)=>fbm3(nz,x,y,z,o);
+  for(let y=0;y<h;y++){
+    const v=y/h;
+    for(let x=0;x<w;x++){
+      const th=x/w*TWO_PI, cx=Math.cos(th), sx=Math.sin(th);
+      let r,gg,b;
+      if(m.id==='titan'){
+        const n=F(cx*3,sx*3,v*6,4);
+        const t2=0.75+n*0.5;
+        r=196*t2; gg=132*t2; b=66*t2;
+      } else {
+        const n=F(cx*3.2,sx*3.2,v*6.4,4);
+        const t2=0.62+(n-0.5)*0.75;
+        r=base[0]*t2; gg=base[1]*t2; b=base[2]*t2;
+      }
+      const i=(y*w+x)*4; d[i]=clamp(r,0,255); d[i+1]=clamp(gg,0,255); d[i+2]=clamp(b,0,255); d[i+3]=255;
+    }
+  }
+  g.putImageData(img,0,0);
+  const rnd=mulberry(hashSeed(m.id)+7);
+  const craters=m.craters??60;
+  if(craters) drawCraters(g,w,h,craters,rnd,m.maxR??5,0.25);
+  if(m.id==='europa'){
+    for(let i=0;i<46;i++){
+      let x=rnd()*w, y=rnd()*h, a=rnd()*TWO_PI;
+      g.strokeStyle=`rgba(150,80,50,${0.22+rnd()*0.2})`; g.lineWidth=0.7+rnd()*0.8;
+      g.beginPath(); g.moveTo(x,y);
+      for(let s=0;s<24;s++){ a+=(rnd()-0.5)*0.9; x+=Math.cos(a)*3; y+=Math.sin(a)*2; g.lineTo(x,y); }
+      g.stroke();
+    }
+  }
+  if(m.id==='callisto'){
+    for(let i=0;i<40;i++){
+      const x=rnd()*w, y=rnd()*h, r2=0.8+rnd()*2.2;
+      g.fillStyle='rgba(255,255,255,0.16)'; g.beginPath(); g.arc(x,y,r2,0,TWO_PI); g.fill();
+    }
+  }
+  if(m.id==='io'){
+    for(let i=0;i<26;i++){
+      const x=rnd()*w, y=rnd()*h, r2=1.5+rnd()*3.5;
+      const gr=g.createRadialGradient(x,y,0,x,y,r2);
+      gr.addColorStop(0,'rgba(120,40,20,0.55)'); gr.addColorStop(0.6,'rgba(160,90,30,0.28)'); gr.addColorStop(1,'rgba(160,90,30,0)');
+      g.fillStyle=gr; g.beginPath(); g.arc(x,y,r2,0,TWO_PI); g.fill();
+    }
+  }
+  if(m.id==='mimas'){
+    const x=w*0.32, y=h*0.42, r2=13;
+    const gr=g.createRadialGradient(x,y,1,x,y,r2);
+    gr.addColorStop(0,'rgba(0,0,0,0.4)'); gr.addColorStop(0.8,'rgba(0,0,0,0.12)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=gr; g.beginPath(); g.arc(x,y,r2,0,TWO_PI); g.fill();
+    g.strokeStyle='rgba(255,255,255,0.22)'; g.lineWidth=1.4; g.beginPath(); g.arc(x,y,r2*0.82,0,TWO_PI); g.stroke();
+  }
+  if(m.id==='tethys'){
+    g.strokeStyle='rgba(255,255,255,0.30)'; g.lineWidth=2.2; g.beginPath();
+    for(let x=0;x<=w;x+=4){ const y=h*0.47+Math.sin(x*0.05)*3; x===0?g.moveTo(x,y):g.lineTo(x,y); }
+    g.stroke();
+  }
+  if(m.id==='umbriel'){
+    for(const [fx,fy] of [[0.28,0.35],[0.6,0.6]]){
+      const x=fx*w, y=fy*h;
+      g.fillStyle='rgba(0,0,0,0.35)'; g.beginPath(); g.ellipse(x,y,14,9,0.4,0,TWO_PI); g.fill();
+    }
+  }
+  if(m.id==='miranda'){
+    g.fillStyle='rgba(255,255,255,0.14)';
+    for(let i=0;i<5;i++){ const x=rnd()*w; g.fillRect(x,0,2+rnd()*3,h); }
+  }
+  if(m.id==='triton'){
+    for(let i=0;i<22;i++){
+      const x=rnd()*w, y=rnd()*h, r2=1+rnd()*2.6;
+      g.fillStyle='rgba(255,240,230,0.35)'; g.beginPath(); g.arc(x,y,r2,0,TWO_PI); g.fill();
+    }
+  }
+  return makeCanvasTexture(c);
+}
+
+function buildSaturnRingTexture(){
+  const w=1024,h=8;
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const g=c.getContext('2d');
+  const img=g.createImageData(w,h); const d=img.data;
+  const nz=makeNoise3D(99);
+  for(let x=0;x<w;x++){
+    const t=x/w;
+    let a=0.62+0.38*Math.sin(t*Math.PI*22+1.3)*Math.sin(t*Math.PI*9+0.5);
+    a*=0.5+fbm3(nz,t*28,0.7,0.2,3)*0.85;
+    if(t>0.615&&t<0.70) a*=0.05;
+    if(t>0.295&&t<0.318) a*=0.3;
+    if(t<0.03||t>0.985) a*=0.12;
+    const lum=0.66+fbm3(nz,t*40+5,0.3,0.9,3)*0.4;
+    const r=clamp(228*lum,0,255), gg=clamp(206*lum,0,255), b=clamp(170*lum,0,255);
+    for(let y=0;y<h;y++){ const i=(y*w+x)*4; d[i]=r; d[i+1]=gg; d[i+2]=b; d[i+3]=clamp(a*255,0,255); }
+  }
+  g.putImageData(img,0,0);
+  return makeCanvasTexture(c);
+}
+
+function buildUranusRingTexture(){
+  const w=1024,h=8;
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const g=c.getContext('2d');
+  const img=g.createImageData(w,h); const d=img.data;
+  for(let x=0;x<w;x++){
+    const t=x/w;
+    let a=0;
+    for(const [c0,wd,amp] of [[0.38,0.010,0.16],[0.52,0.008,0.12],[0.68,0.012,0.30],[0.88,0.006,0.18]]){
+      a=Math.max(a, amp*Math.exp(-((t-c0)**2)/(2*wd*wd)));
+    }
+    const r=clamp(180+a*300,0,255), gg=clamp(215,0,255), b=clamp(220,0,255);
+    for(let y=0;y<h;y++){ const i=(y*w+x)*4; d[i]=r; d[i+1]=gg; d[i+2]=b; d[i+3]=clamp(a*255,0,255); }
+  }
+  g.putImageData(img,0,0);
+  return makeCanvasTexture(c);
+}
+
+function buildNebulaTexture(){
+  const w=512,h=256;
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const g=c.getContext('2d');
+  const img=g.createImageData(w,h); const d=img.data;
+  const nzA=makeNoise3D(3), nzB=makeNoise3D(5), nzC=makeNoise3D(11), nzD=makeNoise3D(29);
+  for(let y=0;y<h;y++){
+    const v=y/h;
+    for(let x=0;x<w;x++){
+      const th=x/w*TWO_PI, cx=Math.cos(th), sx=Math.sin(th);
+      const n1=fbm3(nzA,cx*2.1,sx*2.1,v*3.4,4);
+      const n2=fbm3(nzB,cx*3.7+5.2,sx*3.7,v*5.6+1.8,3);
+      const n3=fbm3(nzC,cx*2.6+9.1,sx*2.6,v*4.4+7.7,3);
+      const n4=fbm3(nzD,cx*1.3+2.2,sx*1.3,v*2.1+4.4,3);
+      let r=5, gg=8, b=17;
+      r+=n1*n1*34; gg+=n1*n1*50; b+=n1*n1*88;
+      const p2=n2*n2; r+=p2*46; gg+=p2*18; b+=p2*58;
+      const p3=n3*n3; r+=p3*12; gg+=p3*36; b+=p3*46;
+      const m4=n4>0.70?(n4-0.70)/0.30:0;
+      r+=m4*m4*44; gg+=m4*m4*10; b+=m4*m4*34;
+      const i=(y*w+x)*4;
+      d[i]=clamp(r,0,255); d[i+1]=clamp(gg,0,255); d[i+2]=clamp(b,0,255); d[i+3]=255;
+    }
+  }
+  g.putImageData(img,0,0);
+  return makeCanvasTexture(c);
+}
+
+/* ================= SCENE OBJECTS ================= */
+let renderer, scene, camera, controls, clock;
+const bodies={}; const planetList=[]; const pickables=[]; const labels=[]; const orbitLines=[];
+let sunMesh, belt, starsA, starsB, ringSel, ringSelMat;
+let selected=null, focusAnim=false, followActive=false, fly=null;
+const focusDir=new THREE.Vector3(0,0.5,1);
+let focusDist=10;
+const lastSelPos=new THREE.Vector3();
+let simDays=0, daysPerSec=0.1*Math.pow(3650,0.37), playing=true;
+let showLabels=true, showOrbits=true;
+
+function makeLabel(text,color,worldW){
+  const fs=44, pad=20;
+  const c=document.createElement('canvas');
+  const mg=c.getContext('2d');
+  mg.font=`600 ${fs}px Rajdhani, "Segoe UI", sans-serif`;
+  const tw=mg.measureText(text).width;
+  c.width=Math.ceil(tw+pad*2); c.height=fs+pad*2;
+  const g=c.getContext('2d');
+  g.font=`600 ${fs}px Rajdhani, "Segoe UI", sans-serif`;
+  g.textAlign='center'; g.textBaseline='middle';
+  g.shadowColor='rgba(125,249,255,0.85)'; g.shadowBlur=14;
+  g.fillStyle=color;
+  g.fillText(text,c.width/2,c.height/2+2);
+  const tex=new THREE.CanvasTexture(c); tex.colorSpace=THREE.SRGBColorSpace;
+  const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,opacity:0.92});
+  mat.toneMapped=false;
+  const spr=new THREE.Sprite(mat);
+  spr.scale.set(worldW, worldW*c.height/c.width, 1);
+  return spr;
+}
+
+function glowSprite(size,opacity=1){
+  const c=document.createElement('canvas'); c.width=c.height=256;
+  const g=c.getContext('2d');
+  const gr=g.createRadialGradient(128,128,0,128,128,128);
+  gr.addColorStop(0,'rgba(255,224,160,1)');
+  gr.addColorStop(0.25,'rgba(255,150,60,0.45)');
+  gr.addColorStop(1,'rgba(255,110,40,0)');
+  g.fillStyle=gr; g.fillRect(0,0,256,256);
+  const tex=new THREE.CanvasTexture(c); tex.colorSpace=THREE.SRGBColorSpace;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity}));
+  s.scale.set(size,size,1);
+  return s;
+}
+
+function makeAtmosphere(radius,colorHex,power,intensity){
+  const mat=new THREE.ShaderMaterial({
+    uniforms:{ glowColor:{value:new THREE.Color(colorHex)}, power:{value:power}, intensity:{value:intensity} },
+    vertexShader:`varying vec3 vN; varying vec3 vV;
+      void main(){ vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.0); vV=mv.xyz; gl_Position=projectionMatrix*mv; }`,
+    fragmentShader:`uniform vec3 glowColor; uniform float power; uniform float intensity;
+      varying vec3 vN; varying vec3 vV;
+      void main(){ vec3 v=normalize(vV); float f=pow(1.0-abs(dot(vN,-v)),power);
+        gl_FragColor=vec4(glowColor,1.0)*f*intensity; }`,
+    side:THREE.BackSide, blending:THREE.AdditiveBlending, transparent:true, depthWrite:false
+  });
+  return new THREE.Mesh(new THREE.SphereGeometry(radius,48,32),mat);
+}
+
+function circleLine(radius,color,opacity,segments=180,parent=null){
+  const pts=[];
+  for(let i=0;i<=segments;i++){
+    const a=i/segments*TWO_PI;
+    pts.push(new THREE.Vector3(Math.cos(a)*radius,0,Math.sin(a)*radius));
+  }
+  const geo=new THREE.BufferGeometry().setFromPoints(pts);
+  const line=new THREE.Line(geo,new THREE.LineBasicMaterial({color:new THREE.Color(color),transparent:true,opacity}));
+  if(parent) parent.add(line); else scene.add(line);
+  return line;
+}
+
+function buildNebula(){
+  const mesh=new THREE.Mesh(
+    new THREE.SphereGeometry(1100,48,24),
+    new THREE.MeshBasicMaterial({map:buildNebulaTexture(),side:THREE.BackSide,depthWrite:false})
+  );
+  scene.add(mesh);
+}
+
+function buildStars(){
+  const mk=(count,rMin,rMax,size,palette,bright)=>{
+    const pos=new Float32Array(count*3), col=new Float32Array(count*3);
+    const rnd=mulberry(count);
+    for(let i=0;i<count;i++){
+      const u=rnd()*2-1, ph=rnd()*TWO_PI, rr=Math.sqrt(1-u*u);
+      const R=lerp(rMin,rMax,rnd());
+      pos[i*3]=rr*Math.cos(ph)*R; pos[i*3+1]=u*R; pos[i*3+2]=rr*Math.sin(ph)*R;
+      const cc=palette[Math.floor(rnd()*palette.length)];
+      const b2=(0.45+rnd()*0.55)*bright;
+      col[i*3]=cc[0]*b2; col[i*3+1]=cc[1]*b2; col[i*3+2]=cc[2]*b2;
+    }
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+    const pts=new THREE.Points(geo,new THREE.PointsMaterial({size,sizeAttenuation:true,vertexColors:true,transparent:true,opacity:0.95,depthWrite:false}));
+    scene.add(pts);
+    return pts;
+  };
+  const white=[[1,1,1],[1,1,1],[0.85,0.9,1],[1,0.95,0.85]];
+  starsA=mk(5200,520,950,1.5,white,0.8);
+  starsB=mk(1400,480,850,3.2,[[1,1,1],[0.7,0.85,1],[1,0.85,0.6],[0.75,1,0.95]],1);
+}
+
+function buildBelt(){
+  const N=2400, pos=new Float32Array(N*3), rnd=mulberry(4242);
+  for(let i=0;i<N;i++){
+    const R=67+(rnd()+rnd()-1)*5.5;
+    const a=rnd()*TWO_PI;
+    const y=(rnd()+rnd()-1)*1.5;
+    pos[i*3]=Math.cos(a)*R; pos[i*3+1]=y; pos[i*3+2]=Math.sin(a)*R;
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  belt=new THREE.Points(geo,new THREE.PointsMaterial({color:0x9a8a76,size:0.5,sizeAttenuation:true,transparent:true,opacity:0.8,depthWrite:false}));
+  scene.add(belt);
+}
+
+function buildSun(tex){
+  sunMesh=new THREE.Mesh(new THREE.SphereGeometry(SUN.r,64,44),new THREE.MeshBasicMaterial({map:tex}));
+  scene.add(sunMesh);
+  sunMesh.userData.bodyId='sun'; pickables.push(sunMesh);
+  const g1=glowSprite(48,0.95), g2=glowSprite(92,0.42);
+  scene.add(g1); scene.add(g2);
+  const worldW=18;
+  const lab=makeLabel(SUN.name,'#ffe2a8',worldW);
+  lab.position.set(0,SUN.r*1.35+worldW*0.2,0);
+  scene.add(lab);
+  lab.userData.bodyId='sun'; lab.visible=showLabels; labels.push(lab); pickables.push(lab);
+  bodies['sun']={id:'sun',data:SUN,mesh:sunMesh,group:sunMesh,anchor:sunMesh,isMoon:false,phase:0,moons:[]};
+}
+
+function buildRings(tiltGroup,inner,outer,kind){
+  const tex=kind==='uranus'?buildUranusRingTexture():buildSaturnRingTexture();
+  const geo=new THREE.RingGeometry(inner,outer,160,1);
+  const pos=geo.attributes.position, uv=geo.attributes.uv, v3=new THREE.Vector3();
+  for(let i=0;i<pos.count;i++){
+    v3.fromBufferAttribute(pos,i);
+    const t=(v3.length()-inner)/(outer-inner);
+    uv.setXY(i,t,0.5);
+  }
+  const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({map:tex,transparent:true,side:THREE.DoubleSide,depthWrite:false,opacity:0.96}));
+  mesh.rotation.x=Math.PI/2;
+  tiltGroup.add(mesh);
+}
+
+async function buildPlanet(p,progress){
+  const anchor=new THREE.Object3D(); scene.add(anchor);
+  const group=new THREE.Group(); group.position.x=p.dist; anchor.add(group);
+  const tilt=new THREE.Group(); tilt.rotation.z=THREE.MathUtils.degToRad(p.tilt); group.add(tilt);
+
+  const mesh=new THREE.Mesh(
+    new THREE.SphereGeometry(p.r,56,40),
+    new THREE.MeshStandardMaterial({map:buildPlanetTexture(p.tex,512,256,hashSeed(p.id)),roughness:1,metalness:0})
+  );
+  tilt.add(mesh);
+  mesh.userData.bodyId=p.id; pickables.push(mesh);
+
+  if(p.rings) buildRings(tilt,p.rings[0],p.rings[1],p.rings[2]);
+  if(p.atmo) group.add(makeAtmosphere(p.r*1.16,p.atmo[0],p.atmo[1],p.atmo[2]));
+
+  const worldW=Math.max(3.6,p.r*1.7);
+  const lab=makeLabel(p.name,'#cfeaff',worldW);
+  lab.position.set(0,p.r*1.3+worldW*0.22+0.55,0);
+  group.add(lab); lab.visible=showLabels; labels.push(lab);
+  lab.userData.bodyId=p.id; pickables.push(lab);
+
+  orbitLines.push(circleLine(p.dist,p.accent,0.20,256));
+
+  const rec={id:p.id,data:p,mesh,group,anchor,isMoon:false,phase:Math.random()*TWO_PI,moons:[]};
+  bodies[p.id]=rec; planetList.push(rec);
+
+  for(const m of (p.moons||[])){
+    await progress(`Tổng hợp vệ tinh ${m.name}…`);
+    buildMoon(rec,m);
+  }
+}
+
+function buildMoon(parent,m){
+  const ma=new THREE.Object3D(); parent.group.add(ma);
+  const g2=new THREE.Group(); g2.position.x=m.d; ma.add(g2);
+  const mesh=new THREE.Mesh(
+    new THREE.SphereGeometry(m.r,36,26),
+    new THREE.MeshStandardMaterial({map:buildMoonTexture(m),roughness:1,metalness:0})
+  );
+  g2.add(mesh);
+  mesh.userData.bodyId=m.id; pickables.push(mesh);
+  if(m.atmo) g2.add(makeAtmosphere(m.r*1.4,m.atmo[0],m.atmo[1],m.atmo[2]));
+  const worldW=Math.max(2.4,m.r*2.8);
+  const lab=makeLabel(m.name,'#9fc4e8',worldW);
+  lab.position.set(0,m.r*1.6+worldW*0.3,0);
+  g2.add(lab); lab.visible=showLabels; labels.push(lab);
+  lab.userData.bodyId=m.id; pickables.push(lab);
+  orbitLines.push(circleLine(m.d,'#9fb8d8',0.10,128,parent.group));
+  const rec={id:m.id,data:m,mesh,group:g2,anchor:ma,isMoon:true,parent,phase:Math.random()*TWO_PI};
+  bodies[m.id]=rec; parent.moons.push(rec);
+}
+
+function buildSelectionRing(){
+  ringSelMat=new THREE.MeshBasicMaterial({color:0x7df9ff,transparent:true,opacity:0.8,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});
+  ringSel=new THREE.Mesh(new THREE.RingGeometry(1,1.05,96),ringSelMat);
+  ringSel.visible=false; scene.add(ringSel);
+}
+
+/* ================= UI ================= */
+function buildNav(){
+  const nav=$('#nav-list');
+  for(const p of [SUN,...PLANETS]){
+    const b=document.createElement('button');
+    b.className='nav-btn'; b.dataset.id=p.id;
+    b.innerHTML=`<span class="nav-dot" style="--c:${p.accent}"></span>${p.name}`;
+    b.addEventListener('click',()=>select(p.id));
+    nav.appendChild(b);
+  }
+}
+
+function showInfo(rec){
+  const d=rec.data;
+  $('#ip-type').textContent=d.type;
+  $('#ip-name').textContent=d.name;
+  $('#ip-en').textContent=d.en;
+  $('#ip-desc').textContent=d.desc;
+  const st=$('#ip-stats'); st.innerHTML='';
+  for(const [k,v] of Object.entries(d.stats)){
+    const el=document.createElement('div'); el.className='stat';
+    el.innerHTML='<span class="k"></span><span class="v"></span>';
+    el.children[0].textContent=k; el.children[1].textContent=v;
+    st.appendChild(el);
+  }
+  const mw=$('#ip-moons-wrap');
+  if(!rec.isMoon && rec.data.moons && rec.data.moons.length){
+    mw.style.display='block';
+    const box=$('#ip-moons'); box.innerHTML='';
+    for(const m of rec.data.moons){
+      const b=document.createElement('button'); b.className='moon-chip';
+      b.innerHTML=`<span class="nav-dot" style="--c:${m.accent}"></span>${m.name}`;
+      b.addEventListener('click',()=>select(m.id));
+      box.appendChild(b);
+    }
+  } else mw.style.display='none';
+  const pp=$('#ip-parent');
+  if(rec.isMoon){
+    pp.style.display='block';
+    pp.textContent=`⟵ ${rec.parent.data.name.toUpperCase()}`;
+    pp.onclick=()=>select(rec.parent.id);
+  } else pp.style.display='none';
+  $('#info-panel').classList.add('open');
+}
+function hideInfo(){ $('#info-panel').classList.remove('open'); }
+
+function updateNavActive(){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',selected&&b.dataset.id===selected.id));
+}
+
+function select(id){
+  const rec=bodies[id]; if(!rec) return;
+  selected=rec;
+  rec.mesh.getWorldPosition(lastSelPos);
+  const off=camera.position.clone().sub(lastSelPos);
+  if(off.lengthSq()<1e-4) focusDir.set(0,0.5,1).normalize();
+  else focusDir.copy(off).normalize();
+  focusDist=Math.max(rec.data.r*5.5,2.8);
+  focusAnim=true; followActive=true; fly=null;
+  showInfo(rec); updateNavActive();
+}
+function deselect(){
+  if(!selected) return;
+  selected=null; followActive=false; focusAnim=false;
+  ringSel.visible=false; hideInfo(); updateNavActive();
+}
+
+function updateSpeedHUD(){
+  let s;
+  if(daysPerSec<1) s=daysPerSec.toFixed(2)+' ngày/giây';
+  else if(daysPerSec<365) s=daysPerSec.toFixed(1)+' ngày/giây';
+  else s=(daysPerSec/365.25).toFixed(1)+' năm/giây';
+  $('#speed-val').textContent=s;
+  $('#speed-hud').textContent=s;
+}
+
+function togglePlay(){
+  playing=!playing;
+  $('#btn-play').textContent=playing?'❚❚':'▶';
+  $('#btn-play').classList.toggle('active',!playing);
+}
+
+function resetView(){
+  deselect();
+  fly={ fromPos:camera.position.clone(), fromTgt:controls.target.clone(),
+        toPos:new THREE.Vector3(0,62,158), toTgt:new THREE.Vector3(0,0,0), t:0, dur:1.2 };
+  focusAnim=false;
+}
+
+function bindUI(){
+  $('#btn-play').addEventListener('click',togglePlay);
+  $('#speed-slider').addEventListener('input',e=>{
+    const t=e.target.value/1000;
+    daysPerSec=0.1*Math.pow(3650,t);
+    updateSpeedHUD();
+  });
+  $('#btn-reset').addEventListener('click',resetView);
+  const bl=$('#btn-labels');
+  bl.addEventListener('click',()=>{
+    showLabels=!showLabels; bl.classList.toggle('active',showLabels);
+    labels.forEach(l=>l.visible=showLabels);
+  });
+  const bo=$('#btn-orbits');
+  bo.addEventListener('click',()=>{
+    showOrbits=!showOrbits; bo.classList.toggle('active',showOrbits);
+    orbitLines.forEach(l=>l.visible=showOrbits);
+  });
+  bl.classList.add('active'); bo.classList.add('active');
+  $('#info-close').addEventListener('click',deselect);
+  addEventListener('keydown',e=>{
+    if(e.code==='Space'){ e.preventDefault(); togglePlay(); }
+    if(e.code==='Escape') deselect();
+  });
+}
+
+/* ================= PICKING ================= */
+const raycaster=new THREE.Raycaster();
+const ndc=new THREE.Vector2();
+const _v=new THREE.Vector3();
+function pickAt(cx,cy){
+  ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);
+  raycaster.setFromCamera(ndc,camera);
+  const hits=raycaster.intersectObjects(pickables,false);
+  if(hits.length) return hits[0].object.userData.bodyId||null;
+  let best=null, bestD=22;
+  for(const id in bodies){
+    const rec=bodies[id];
+    rec.mesh.getWorldPosition(_v);
+    const s=_v.clone().project(camera);
+    if(s.z>1) continue;
+    const dx=(s.x*0.5+0.5)*innerWidth-cx;
+    const dy=(-s.y*0.5+0.5)*innerHeight-cy;
+    const dist=Math.hypot(dx,dy);
+    if(dist<bestD){ bestD=dist; best=id; }
+  }
+  return best;
+}
+
+function bindPointer(){
+  const el=renderer.domElement;
+  const tooltip=$('#tooltip');
+  let downX=0,downY=0,downT=0,lastHover=0;
+  el.addEventListener('pointerdown',e=>{ downX=e.clientX; downY=e.clientY; downT=performance.now(); });
+  el.addEventListener('pointerup',e=>{
+    if(Math.hypot(e.clientX-downX,e.clientY-downY)<7 && performance.now()-downT<600){
+      const id=pickAt(e.clientX,e.clientY);
+      if(id) select(id); else deselect();
+    }
+  });
+  el.addEventListener('pointermove',e=>{
+    const now=performance.now();
+    if(now-lastHover<40) return; lastHover=now;
+    if(e.buttons){ tooltip.style.opacity=0; return; }
+    const id=pickAt(e.clientX,e.clientY);
+    if(id){
+      const rec=bodies[id];
+      tooltip.innerHTML=`${rec.data.name}<span class="tt-sub">${rec.data.en}</span>`;
+      tooltip.style.left=e.clientX+'px'; tooltip.style.top=e.clientY+'px';
+      tooltip.style.opacity=1;
+      el.style.cursor='pointer';
+    } else { tooltip.style.opacity=0; el.style.cursor='default'; }
+  });
+  el.addEventListener('pointerleave',()=>{ tooltip.style.opacity=0; });
+}
+
+/* ================= LOOP ================= */
+const _wp=new THREE.Vector3(), _delta=new THREE.Vector3(), _desired=new THREE.Vector3();
+let hudTimer=0;
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.1);
+  const t=clock.elapsedTime;
+  if(playing) simDays+=daysPerSec*dt;
+
+  for(const p of planetList){
+    p.anchor.rotation.y=p.phase+TWO_PI*simDays/p.data.period;
+    p.mesh.rotation.y=TWO_PI*simDays/p.data.rotDays;
+    for(const m of p.moons){
+      m.anchor.rotation.y=m.phase+TWO_PI*simDays/m.data.period;
+      m.mesh.rotation.y=TWO_PI*simDays/m.data.period;
+    }
+  }
+  sunMesh.rotation.y=TWO_PI*simDays/25.4;
+  belt.rotation.y=TWO_PI*simDays/1600;
+  starsA.rotation.y+=dt*0.0012;
+  starsB.rotation.y+=dt*0.002;
+
+  if(fly){
+    fly.t+=dt;
+    const k=clamp(fly.t/fly.dur,0,1);
+    const e=k<0.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    camera.position.lerpVectors(fly.fromPos,fly.toPos,e);
+    controls.target.lerpVectors(fly.fromTgt,fly.toTgt,e);
+    if(fly.t>=fly.dur) fly=null;
+  }
+
+  if(selected){
+    selected.mesh.getWorldPosition(_wp);
+    if(focusAnim){
+      const k=1-Math.exp(-3.4*dt);
+      _desired.copy(_wp).addScaledVector(focusDir,focusDist);
+      camera.position.lerp(_desired,k);
+      controls.target.lerp(_wp,k);
+      if(camera.position.distanceToSquared(_desired)<Math.pow(focusDist*0.03,2)) focusAnim=false;
+    }
+    if(followActive){
+      _delta.copy(_wp).sub(lastSelPos);
+      camera.position.add(_delta);
+      controls.target.add(_delta);
+    }
+    lastSelPos.copy(_wp);
+    ringSel.visible=true;
+    ringSel.position.copy(_wp);
+    const rs=Math.max(selected.data.r*1.7+Math.sin(t*2.6)*selected.data.r*0.08,0.5);
+    ringSel.scale.setScalar(rs);
+    ringSel.lookAt(camera.position);
+    ringSelMat.opacity=0.55+0.25*Math.sin(t*4.2);
+  }
+
+  controls.update();
+  renderer.render(scene,camera);
+
+  hudTimer+=dt;
+  if(hudTimer>0.2){
+    hudTimer=0;
+    const years=Math.floor(simDays/365.25);
+    const days=Math.floor(simDays-years*365.25);
+    $('#sim-time').textContent=years>0?`Năm ${years} · Ngày ${days}`:`Ngày ${days}`;
+  }
+}
+
+/* ================= INIT ================= */
+function showFatal(msg){
+  const l=$('#loading');
+  l.innerHTML=`<div class="load-frame"><h2>ĐIỂM TIN</h2><p style="color:#ff8d7a;font-size:14px;margin-top:16px">${msg}</p></div>`;
+}
+
+async function init(){
+  await Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]).catch(()=>{});
+
+  try{
+    renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+  }catch(err){ showFatal('Thiết bị không hỗ trợ WebGL.'); return; }
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.12;
+  $('#scene').appendChild(renderer.domElement);
+
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,4000);
+  camera.position.set(0,62,158);
+
+  controls=new OrbitControls(camera,renderer.domElement);
+  controls.target.set(0,0,0);
+  controls.enableDamping=true; controls.dampingFactor=0.06;
+  controls.minDistance=2.0; controls.maxDistance=750;
+  controls.addEventListener('start',()=>{ focusAnim=false; fly=null; });
+
+  scene.add(new THREE.AmbientLight(0x28344e,0.55));
+  scene.add(new THREE.PointLight(0xfff1cf,2.8,0,0));
+
+  const total=32; let step=0;
+  const progress=async msg=>{
+    step++;
+    $('#load-txt').textContent=msg;
+    $('#load-fill').style.width=(step/total*100).toFixed(1)+'%';
+    await nextFrame();
+  };
+
+  await progress('Đan nền thiên hà…');
+  buildNebula();
+  await progress('Rải 6.600 ngôi sao…');
+  buildStars();
+  await progress('Trồng vành đai tiểu hành tinh…');
+  buildBelt();
+  await progress('Thắp sáng Mặt Trời…');
+  buildSun(buildPlanetTexture('sun',512,256,7));
+
+  for(const p of PLANETS){
+    await progress(`Tổng hợp ${p.name}…`);
+    await buildPlanet(p,progress);
+  }
+
+  buildSelectionRing();
+  buildNav();
+  bindUI();
+  bindPointer();
+  updateSpeedHUD();
+
+  addEventListener('resize',()=>{
+    camera.aspect=innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  });
+
+  $('#loading').classList.add('done');
+  setTimeout(()=>{ const l=$('#loading'); if(l) l.remove(); },900);
+
+  clock=new THREE.Clock();
+  animate();
+}
+
+init();
+</script>
+</body>
+</html>

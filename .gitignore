@@ -1,0 +1,29 @@
+# Bỏ qua mọi file video demo: dung lượng quá lớn để nằm trong git.
+# Solar-System.mp4 nặng ~132MB, vượt giới hạn cứng 100MB của GitHub.
+# Cả 4 file cộng lại ~196MB → repo sẽ phình và clone rất chậm.
+# Cách dùng lại: tải video về đặt cạnh index.html (đúng tên bên dưới),
+# hoặc sửa trường "demo" trong _hub/projects.data.js thành link YouTube/Drive,
+# rồi xoá cờ "demoDisabled" của dự án đó.
+#   Solar-System.mp4, FlappyBird.mp4, Whack-A-Mole.mp4, Hoc-Toan.mp4
+*.mp4
+
+# Hệ điều hành / trình soạn thảo
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# Node (chỉ dùng cho các script test, không có thư viện ngoài)
+node_modules/
+npm-debug.log*
+.npm/
+
+# Thư mục tạm khi kiểm tra giao diện
+_shots/
+*.local
+
+# Bí mật / cấu hình cá nhân (không commit lên repo công khai)
+.env
+.env.*
+solar-system.local.html

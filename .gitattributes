@@ -1,0 +1,17 @@
+# Chuẩn hoá kiểu xuống dòng: repo dùng LF để nội dung file giống nhau
+# trên mọi hệ điều hành (tránh lẫn CRLF/LF khi cộng tác).
+* text=auto eol=lf
+
+# File nhị phân: giữ nguyên byte
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.svg text
+*.mp4 binary
+*.mp3 binary
+
+# Script chạy trên Windows vẫn nên giữ LF cho nhất quán với phần còn lại
+*.cmd text eol=crlf
+*.bat text eol=crlf
